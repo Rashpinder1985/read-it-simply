@@ -27,6 +27,12 @@ serve(async (req) => {
       .select('*')
       .eq('user_id', userId);
 
+    // Check if user already has market data and update it if needed
+    const { data: existingMarketData } = await supabaseClient
+      .from('market_data')
+      .select('*')
+      .eq('user_id', userId);
+
     if (existingPersonas && existingPersonas.length > 0) {
       console.log('Updating existing personas with complete data');
       
@@ -86,8 +92,54 @@ serve(async (req) => {
           .eq('id', existingPersonas[i].id);
       }
 
+      // Also update market data if it exists
+      if (existingMarketData && existingMarketData.length > 0) {
+        console.log('Updating existing market data with correct engagement metrics');
+        
+        const marketUpdates = [
+          {
+            gold_price: 7500,
+            silver_price: 95,
+            engagement_metrics: {
+              likes: 15000,
+              comments: 500,
+              shares: 200
+            }
+          },
+          {
+            gold_price: 7450,
+            silver_price: 93,
+            engagement_metrics: {
+              likes: 5000,
+              comments: 150,
+              shares: 80
+            }
+          },
+          {
+            gold_price: 7480,
+            silver_price: 94,
+            engagement_metrics: {
+              likes: 8000,
+              comments: 300,
+              shares: 150
+            }
+          }
+        ];
+
+        for (let i = 0; i < existingMarketData.length && i < marketUpdates.length; i++) {
+          await supabaseClient
+            .from('market_data')
+            .update({
+              gold_price: marketUpdates[i].gold_price,
+              silver_price: marketUpdates[i].silver_price,
+              engagement_metrics: marketUpdates[i].engagement_metrics
+            })
+            .eq('id', existingMarketData[i].id);
+        }
+      }
+
       return new Response(
-        JSON.stringify({ success: true, message: 'Personas updated with complete data' }),
+        JSON.stringify({ success: true, message: 'Data updated with complete information' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -189,9 +241,9 @@ serve(async (req) => {
           recent_campaigns: ["Diwali Collection 2024", "Bridal Heritage"]
         },
         engagement_metrics: {
-          likes_avg: 15000,
-          comments_avg: 500,
-          shares_avg: 200
+          likes: 15000,
+          comments: 500,
+          shares: 200
         },
         major_update: "Launched sustainable gold collection",
         product_innovation: "Digital gold investment platform"
@@ -208,9 +260,9 @@ serve(async (req) => {
           recent_campaigns: ["Akshaya Tritiya Special", "Lightweight Gold"]
         },
         engagement_metrics: {
-          likes_avg: 5000,
-          comments_avg: 150,
-          shares_avg: 80
+          likes: 5000,
+          comments: 150,
+          shares: 80
         },
         major_update: "Expanded to 20 new cities",
         product_innovation: "24-hour gold price lock guarantee"
@@ -227,9 +279,9 @@ serve(async (req) => {
           recent_campaigns: ["Wedding Collection", "Temple Jewelry"]
         },
         engagement_metrics: {
-          likes_avg: 8000,
-          comments_avg: 300,
-          shares_avg: 150
+          likes: 8000,
+          comments: 300,
+          shares: 150
         },
         major_update: "Partnership with Amitabh Bachchan for Diwali campaign",
         product_innovation: "Antique jewelry restoration service"

@@ -17,15 +17,26 @@ export const useSampleDataGenerator = () => {
         .select('id, demographics, behaviors')
         .limit(1);
 
+      const { data: existingMarketData } = await supabase
+        .from('market_data')
+        .select('id, engagement_metrics')
+        .limit(1);
+
       // If personas exist, check if they have the new structure
       if (existingPersonas && existingPersonas.length > 0) {
         const firstPersona = existingPersonas[0];
         const demographics = firstPersona.demographics as any;
         const behaviors = firstPersona.behaviors as any;
         
+        const firstMarket = existingMarketData?.[0];
+        const engagementMetrics = firstMarket?.engagement_metrics as any;
+        
         // Check if data is incomplete (missing new fields)
-        if (!demographics?.age_range || !demographics?.gender || !behaviors?.shopping) {
-          console.log('Persona data incomplete, updating...');
+        const personaIncomplete = !demographics?.age_range || !demographics?.gender || !behaviors?.shopping;
+        const marketIncomplete = engagementMetrics && (!engagementMetrics?.likes || engagementMetrics?.likes_avg);
+        
+        if (personaIncomplete || marketIncomplete) {
+          console.log('Data incomplete, updating...');
           try {
             // Call edge function to update existing data
             const { data, error } = await supabase.functions.invoke('generate-sample-data', {
@@ -40,7 +51,7 @@ export const useSampleDataGenerator = () => {
             if (data?.success) {
               toast({
                 title: "Data Updated! 🎉",
-                description: "Your persona data has been refreshed with complete information.",
+                description: "Your data has been refreshed with complete information.",
               });
               
               // Refresh the page to show updated data
