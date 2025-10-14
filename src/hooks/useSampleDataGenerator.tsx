@@ -14,11 +14,42 @@ export const useSampleDataGenerator = () => {
       // Check if user already has data
       const { data: existingPersonas } = await supabase
         .from('personas')
-        .select('id')
+        .select('id, demographics, behaviors')
         .limit(1);
 
+      // If personas exist, check if they have the new structure
       if (existingPersonas && existingPersonas.length > 0) {
-        // User already has data
+        const firstPersona = existingPersonas[0];
+        const demographics = firstPersona.demographics as any;
+        const behaviors = firstPersona.behaviors as any;
+        
+        // Check if data is incomplete (missing new fields)
+        if (!demographics?.age_range || !demographics?.gender || !behaviors?.shopping) {
+          console.log('Persona data incomplete, updating...');
+          try {
+            // Call edge function to update existing data
+            const { data, error } = await supabase.functions.invoke('generate-sample-data', {
+              body: {
+                userId: user.id,
+                businessName: user.user_metadata?.business_name || 'My Jewelry Business'
+              }
+            });
+
+            if (error) throw error;
+
+            if (data?.success) {
+              toast({
+                title: "Data Updated! 🎉",
+                description: "Your persona data has been refreshed with complete information.",
+              });
+              
+              // Refresh the page to show updated data
+              window.location.reload();
+            }
+          } catch (error) {
+            console.error('Error updating persona data:', error);
+          }
+        }
         return;
       }
 

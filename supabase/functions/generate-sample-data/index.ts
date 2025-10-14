@@ -21,6 +21,77 @@ serve(async (req) => {
 
     console.log('Generating sample data for user:', userId, 'Business:', businessName);
 
+    // Check if user already has personas and update them if they're missing data
+    const { data: existingPersonas } = await supabaseClient
+      .from('personas')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (existingPersonas && existingPersonas.length > 0) {
+      console.log('Updating existing personas with complete data');
+      
+      // Update existing personas with complete structure
+      const personaUpdates = [
+        {
+          demographics: {
+            age_range: "25-35 years",
+            income: "₹15L+ annually",
+            location: "Tier 1 cities (Mumbai, Delhi, Bangalore)",
+            gender: "Female",
+            occupation: "Professionals, Entrepreneurs"
+          },
+          behaviors: {
+            shopping: "Research-intensive, visits multiple stores, reads reviews",
+            social_media: "Instagram (4-5 hours/day), Pinterest, Wedding blogs",
+            purchase_frequency: "Once in lifetime (wedding), Anniversary gifts"
+          }
+        },
+        {
+          demographics: {
+            age_range: "30-50 years",
+            income: "₹8-15L annually",
+            location: "All tiers - Urban and Semi-urban",
+            gender: "Female (primary), Male (gifting)",
+            occupation: "Middle-class families, Service class"
+          },
+          behaviors: {
+            shopping: "Seasonal purchases tied to festivals and auspicious dates",
+            social_media: "Facebook groups, WhatsApp, YouTube",
+            purchase_frequency: "2-3 times per year (Diwali, Akshaya Tritiya, Weddings)"
+          }
+        },
+        {
+          demographics: {
+            age_range: "22-32 years",
+            income: "₹5-10L annually",
+            location: "Urban metro areas",
+            gender: "Female (primarily), Male (gifting occasions)",
+            occupation: "IT professionals, Corporate employees, Entrepreneurs"
+          },
+          behaviors: {
+            shopping: "Online-first, impulse purchases, influenced by Instagram",
+            social_media: "Instagram Reels (6+ hours/day), Online marketplaces",
+            purchase_frequency: "Monthly (small pieces), Quarterly (statement pieces)"
+          }
+        }
+      ];
+
+      for (let i = 0; i < existingPersonas.length && i < personaUpdates.length; i++) {
+        await supabaseClient
+          .from('personas')
+          .update({
+            demographics: personaUpdates[i].demographics,
+            behaviors: personaUpdates[i].behaviors
+          })
+          .eq('id', existingPersonas[i].id);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Personas updated with complete data' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Create sample personas for jewelry business
     const personas = [
       {
