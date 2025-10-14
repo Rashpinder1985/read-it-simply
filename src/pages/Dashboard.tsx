@@ -92,34 +92,42 @@ const Dashboard = () => {
       <main className="container mx-auto px-6 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatsCard 
-            title="Brands Tracked" 
-            value={marketData?.length.toString() || "0"} 
-            change="Live data"
-            trend="up"
-            icon={Target}
-          />
-          <StatsCard 
-            title="Active Personas" 
-            value={personas?.length.toString() || "0"} 
-            change="Click to view details"
-            trend="up"
-            icon={Users}
-          />
-          <StatsCard 
-            title="Pending Approval" 
-            value={pendingContent.toString()} 
-            change="Content awaiting review"
-            trend="neutral"
-            icon={FileText}
-          />
-          <StatsCard 
-            title="Ready to Schedule" 
-            value={approvedContent.toString()} 
-            change="Approved content"
-            trend="up"
-            icon={Calendar}
-          />
+          <div onClick={() => setMarketPulseOpen(true)} className="cursor-pointer">
+            <StatsCard 
+              title="Brands Tracked" 
+              value={marketData?.length.toString() || "0"} 
+              change="Live data"
+              trend="up"
+              icon={Target}
+            />
+          </div>
+          <div onClick={() => setPersonasOpen(true)} className="cursor-pointer">
+            <StatsCard 
+              title="Active Personas" 
+              value={personas?.length.toString() || "0"} 
+              change="Click to view details"
+              trend="up"
+              icon={Users}
+            />
+          </div>
+          <div onClick={() => setContentApprovalOpen(true)} className="cursor-pointer">
+            <StatsCard 
+              title="Pending Approval" 
+              value={pendingContent.toString()} 
+              change="Content awaiting review"
+              trend="neutral"
+              icon={FileText}
+            />
+          </div>
+          <div onClick={() => setContentSchedulingOpen(true)} className="cursor-pointer">
+            <StatsCard 
+              title="Ready to Schedule" 
+              value={approvedContent.toString()} 
+              change="Approved content"
+              trend="up"
+              icon={Calendar}
+            />
+          </div>
         </div>
 
         {/* AI Employees Section */}
