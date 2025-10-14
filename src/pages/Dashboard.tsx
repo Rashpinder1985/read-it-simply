@@ -1,6 +1,9 @@
 import { Header } from "@/components/Header";
 import { AIEmployee } from "@/components/AIEmployee";
 import { StatsCard } from "@/components/StatsCard";
+import { MarketPulseModal } from "@/components/MarketPulseModal";
+import { PersonasModal } from "@/components/PersonasModal";
+import { ContentApprovalModal } from "@/components/ContentApprovalModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,41 +17,82 @@ import {
   Sparkles,
   Clock
 } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  const [marketPulseOpen, setMarketPulseOpen] = useState(false);
+  const [personasOpen, setPersonasOpen] = useState(false);
+  const [contentApprovalOpen, setContentApprovalOpen] = useState(false);
+
+  const { data: personas } = useQuery({
+    queryKey: ['personas'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('personas').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: content } = useQuery({
+    queryKey: ['content'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('content').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: marketData } = useQuery({
+    queryKey: ['market-data'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('market_data').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const pendingContent = content?.filter(c => c.status === 'pending_approval').length || 0;
+  const approvedContent = content?.filter(c => c.status === 'approved').length || 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Header />
+      
+      <MarketPulseModal open={marketPulseOpen} onOpenChange={setMarketPulseOpen} />
+      <PersonasModal open={personasOpen} onOpenChange={setPersonasOpen} />
+      <ContentApprovalModal open={contentApprovalOpen} onOpenChange={setContentApprovalOpen} />
       
       <main className="container mx-auto px-6 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard 
-            title="Brands Analyzed" 
-            value="65" 
-            change="+15 this week"
+            title="Brands Tracked" 
+            value={marketData?.length.toString() || "0"} 
+            change="Live data"
             trend="up"
             icon={Target}
           />
           <StatsCard 
-            title="Personas Created" 
-            value="12" 
-            change="+3 this week"
+            title="Active Personas" 
+            value={personas?.length.toString() || "0"} 
+            change="Click to view details"
             trend="up"
             icon={Users}
           />
           <StatsCard 
-            title="Content Generated" 
-            value="248" 
-            change="+52 this week"
-            trend="up"
+            title="Pending Approval" 
+            value={pendingContent.toString()} 
+            change="Content awaiting review"
+            trend="neutral"
             icon={FileText}
           />
           <StatsCard 
-            title="Posts Scheduled" 
-            value="156" 
-            change="Next 30 days"
-            trend="neutral"
+            title="Ready to Schedule" 
+            value={approvedContent.toString()} 
+            change="Approved content"
+            trend="up"
             icon={Calendar}
           />
         </div>
@@ -67,41 +111,47 @@ const Dashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AIEmployee
-              name="MarketPulse"
-              role="Market Research Specialist"
-              description="Analyzes 15 national and 50 regional jewellery brands across India, tracking social media activity, trends, and competitive insights. Updates daily with latest market intelligence."
-              status="active"
-              icon={<TrendingUp className="h-6 w-6" />}
-              metrics={[
-                { label: "Brands Tracked", value: "65" },
-                { label: "Updates Today", value: "127" },
-              ]}
-            />
+            <div onClick={() => setMarketPulseOpen(true)} className="cursor-pointer">
+              <AIEmployee
+                name="MarketPulse"
+                role="Market Research Specialist"
+                description="Analyzes Indian jewellery brands, tracking gold/silver prices, social media activity, trends, and competitive insights. Click to view live market dashboard."
+                status="active"
+                icon={<TrendingUp className="h-6 w-6" />}
+                metrics={[
+                  { label: "Brands Tracked", value: marketData?.length.toString() || "0" },
+                  { label: "Live Updates", value: "Real-time" },
+                ]}
+              />
+            </div>
 
-            <AIEmployee
-              name="Brand Persona"
-              role="Customer Intelligence Analyst"
-              description="Creates detailed buyer personas based on demographics, psychographics, and behaviors. Identifies target customers like 'The Socially-Conscious Minimalist' with deep insights."
-              status="processing"
-              icon={<Users className="h-6 w-6" />}
-              metrics={[
-                { label: "Active Personas", value: "12" },
-                { label: "Segments", value: "4" },
-              ]}
-            />
+            <div onClick={() => setPersonasOpen(true)} className="cursor-pointer">
+              <AIEmployee
+                name="Brand Persona"
+                role="Customer Intelligence Analyst"
+                description="Creates detailed buyer personas with demographics, psychographics, and behaviors. Click to view active personas and their complete profiles."
+                status="active"
+                icon={<Users className="h-6 w-6" />}
+                metrics={[
+                  { label: "Active Personas", value: personas?.length.toString() || "0" },
+                  { label: "Segments", value: "3" },
+                ]}
+              />
+            </div>
 
-            <AIEmployee
-              name="Content Generation"
-              role="Creative Content Strategist"
-              description="Generates highly impactful Instagram posts and reels tailored to each persona. Uses data-driven insights from MarketPulse to create engaging, relevant content."
-              status="active"
-              icon={<Brain className="h-6 w-6" />}
-              metrics={[
-                { label: "Posts Generated", value: "248" },
-                { label: "Reels Created", value: "64" },
-              ]}
-            />
+            <div onClick={() => setContentApprovalOpen(true)} className="cursor-pointer">
+              <AIEmployee
+                name="Content Generation"
+                role="Creative Content Strategist"
+                description="Generates Instagram posts and reels tailored to each persona. Click to review, approve, or reject generated content before scheduling."
+                status="active"
+                icon={<Brain className="h-6 w-6" />}
+                metrics={[
+                  { label: "Pending Approval", value: pendingContent.toString() },
+                  { label: "Approved", value: approvedContent.toString() },
+                ]}
+              />
+            </div>
 
             <AIEmployee
               name="Content Scheduling"

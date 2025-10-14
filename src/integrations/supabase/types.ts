@@ -14,7 +14,149 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      content: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          content_text: string
+          created_at: string | null
+          description: string | null
+          hashtags: string[] | null
+          id: string
+          media_url: string | null
+          persona_id: string | null
+          rejection_reason: string | null
+          scheduled_for: string | null
+          status: Database["public"]["Enums"]["content_status"] | null
+          title: string
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content_text: string
+          created_at?: string | null
+          description?: string | null
+          hashtags?: string[] | null
+          id?: string
+          media_url?: string | null
+          persona_id?: string | null
+          rejection_reason?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          title: string
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content_text?: string
+          created_at?: string | null
+          description?: string | null
+          hashtags?: string[] | null
+          id?: string
+          media_url?: string | null
+          persona_id?: string | null
+          rejection_reason?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          title?: string
+          type?: Database["public"]["Enums"]["content_type"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_data: {
+        Row: {
+          brand_name: string
+          category: string | null
+          created_at: string | null
+          engagement_metrics: Json | null
+          gold_price: number | null
+          id: string
+          major_update: string | null
+          product_innovation: string | null
+          silver_price: number | null
+          social_media_activity: Json | null
+          timestamp: string | null
+        }
+        Insert: {
+          brand_name: string
+          category?: string | null
+          created_at?: string | null
+          engagement_metrics?: Json | null
+          gold_price?: number | null
+          id?: string
+          major_update?: string | null
+          product_innovation?: string | null
+          silver_price?: number | null
+          social_media_activity?: Json | null
+          timestamp?: string | null
+        }
+        Update: {
+          brand_name?: string
+          category?: string | null
+          created_at?: string | null
+          engagement_metrics?: Json | null
+          gold_price?: number | null
+          id?: string
+          major_update?: string | null
+          product_innovation?: string | null
+          silver_price?: number | null
+          social_media_activity?: Json | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      personas: {
+        Row: {
+          behaviors: Json | null
+          created_at: string | null
+          demographics: Json | null
+          goals: string[] | null
+          id: string
+          name: string
+          pain_points: string[] | null
+          psychographics: Json | null
+          segment: string
+          updated_at: string | null
+        }
+        Insert: {
+          behaviors?: Json | null
+          created_at?: string | null
+          demographics?: Json | null
+          goals?: string[] | null
+          id?: string
+          name: string
+          pain_points?: string[] | null
+          psychographics?: Json | null
+          segment: string
+          updated_at?: string | null
+        }
+        Update: {
+          behaviors?: Json | null
+          created_at?: string | null
+          demographics?: Json | null
+          goals?: string[] | null
+          id?: string
+          name?: string
+          pain_points?: string[] | null
+          psychographics?: Json | null
+          segment?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +165,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      content_status:
+        | "draft"
+        | "pending_approval"
+        | "approved"
+        | "rejected"
+        | "scheduled"
+        | "published"
+      content_type: "post" | "reel"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +299,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      content_status: [
+        "draft",
+        "pending_approval",
+        "approved",
+        "rejected",
+        "scheduled",
+        "published",
+      ],
+      content_type: ["post", "reel"],
+    },
   },
 } as const
