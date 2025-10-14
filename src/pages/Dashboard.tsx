@@ -22,10 +22,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useSampleDataGenerator } from "@/hooks/useSampleDataGenerator";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  useSampleDataGenerator(); // Auto-generate sample data for new users
   const [marketPulseOpen, setMarketPulseOpen] = useState(false);
   const [personasOpen, setPersonasOpen] = useState(false);
   const [contentApprovalOpen, setContentApprovalOpen] = useState(false);
