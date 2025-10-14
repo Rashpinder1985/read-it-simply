@@ -31,6 +31,7 @@ export type Database = {
           title: string
           type: Database["public"]["Enums"]["content_type"]
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -48,6 +49,7 @@ export type Database = {
           title: string
           type: Database["public"]["Enums"]["content_type"]
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           title?: string
           type?: Database["public"]["Enums"]["content_type"]
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -89,6 +92,7 @@ export type Database = {
           silver_price: number | null
           social_media_activity: Json | null
           timestamp: string | null
+          user_id: string | null
         }
         Insert: {
           brand_name: string
@@ -102,6 +106,7 @@ export type Database = {
           silver_price?: number | null
           social_media_activity?: Json | null
           timestamp?: string | null
+          user_id?: string | null
         }
         Update: {
           brand_name?: string
@@ -115,6 +120,7 @@ export type Database = {
           silver_price?: number | null
           social_media_activity?: Json | null
           timestamp?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -130,6 +136,7 @@ export type Database = {
           psychographics: Json | null
           segment: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           behaviors?: Json | null
@@ -142,6 +149,7 @@ export type Database = {
           psychographics?: Json | null
           segment: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           behaviors?: Json | null
@@ -154,6 +162,55 @@ export type Database = {
           psychographics?: Json | null
           segment?: string
           updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -162,9 +219,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "editor" | "viewer"
       content_status:
         | "draft"
         | "pending_approval"
@@ -300,6 +364,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "editor", "viewer"],
       content_status: [
         "draft",
         "pending_approval",
