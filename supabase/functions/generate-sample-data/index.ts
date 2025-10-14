@@ -28,69 +28,72 @@ serve(async (req) => {
         name: "Affluent Bride-to-Be",
         segment: "High-Value Wedding Customers",
         demographics: {
-          age: "25-35",
+          age_range: "25-35 years",
           income: "₹15L+ annually",
-          location: "Tier 1 cities",
+          location: "Tier 1 cities (Mumbai, Delhi, Bangalore)",
+          gender: "Female",
           occupation: "Professionals, Entrepreneurs"
         },
         psychographics: {
-          values: ["Quality", "Tradition", "Status"],
-          interests: ["Weddings", "Fashion", "Luxury"],
-          lifestyle: "Premium, Brand-conscious"
+          values: ["Quality", "Tradition", "Status", "Uniqueness"],
+          interests: ["Weddings", "Fashion", "Luxury Brands"],
+          lifestyle: "Premium, Brand-conscious, Social"
         },
         behaviors: {
-          shopping_pattern: "Research-intensive, Multiple visits",
-          channel_preference: "Instagram, Wedding blogs, Store visits",
-          decision_factors: ["Design uniqueness", "Brand reputation", "Customization"]
+          shopping: "Research-intensive, visits multiple stores, reads reviews",
+          social_media: "Instagram (4-5 hours/day), Pinterest, Wedding blogs",
+          purchase_frequency: "Once in lifetime (wedding), Anniversary gifts"
         },
-        goals: ["Find perfect wedding jewelry", "Balance tradition with modern style"],
-        pain_points: ["High prices", "Limited customization", "Trust concerns"]
+        goals: ["Find perfect wedding jewelry", "Balance tradition with modern style", "Create lasting memories"],
+        pain_points: ["High prices and value concerns", "Limited customization options", "Trust and authenticity issues"]
       },
       {
         user_id: userId,
         name: "Festival Shopper",
         segment: "Seasonal Occasion Buyers",
         demographics: {
-          age: "30-50",
+          age_range: "30-50 years",
           income: "₹8-15L annually",
-          location: "All tiers",
-          occupation: "Middle-class families"
+          location: "All tiers - Urban and Semi-urban",
+          gender: "Female (primary), Male (gifting)",
+          occupation: "Middle-class families, Service class"
         },
         psychographics: {
-          values: ["Tradition", "Family", "Auspiciousness"],
-          interests: ["Festivals", "Cultural events", "Investment"],
-          lifestyle: "Traditional, Value-conscious"
+          values: ["Tradition", "Family", "Auspiciousness", "Investment"],
+          interests: ["Festivals", "Cultural events", "Gold investment"],
+          lifestyle: "Traditional, Family-oriented, Value-conscious"
         },
         behaviors: {
-          shopping_pattern: "Seasonal purchases (Diwali, Akshaya Tritiya)",
-          channel_preference: "Facebook, WhatsApp, Local stores",
-          decision_factors: ["Gold purity", "Price", "Auspicious timing"]
+          shopping: "Seasonal purchases tied to festivals and auspicious dates",
+          social_media: "Facebook groups, WhatsApp, YouTube",
+          purchase_frequency: "2-3 times per year (Diwali, Akshaya Tritiya, Weddings)"
         },
-        goals: ["Buy gold for Diwali/festivals", "Investment in gold"],
-        pain_points: ["Price volatility", "Authenticity concerns", "Limited designs"]
+        goals: ["Buy gold for Diwali/festivals", "Investment in gold", "Gift to family members"],
+        pain_points: ["Gold price volatility", "Authenticity and purity concerns", "Limited lightweight designs for daily wear"]
       },
       {
         user_id: userId,
         name: "Young Professional",
         segment: "Daily Wear & Gifting",
         demographics: {
-          age: "22-32",
+          age_range: "22-32 years",
           income: "₹5-10L annually",
-          location: "Urban areas",
-          occupation: "Working professionals"
+          location: "Urban metro areas",
+          gender: "Female (primarily), Male (gifting occasions)",
+          occupation: "IT professionals, Corporate employees, Entrepreneurs"
         },
         psychographics: {
-          values: ["Style", "Convenience", "Affordability"],
-          interests: ["Fashion", "Social media", "Gifting"],
-          lifestyle: "Modern, Trend-following"
+          values: ["Style", "Convenience", "Affordability", "Modern aesthetics"],
+          interests: ["Fashion trends", "Social media", "Travel", "Gifting"],
+          lifestyle: "Modern, Fast-paced, Trend-following, Digital-first"
         },
         behaviors: {
-          shopping_pattern: "Impulse buys, Online shopping",
-          channel_preference: "Instagram, Online stores, Quick delivery",
-          decision_factors: ["Design", "Price", "Convenience"]
+          shopping: "Online-first, impulse purchases, influenced by Instagram",
+          social_media: "Instagram Reels (6+ hours/day), Online marketplaces",
+          purchase_frequency: "Monthly (small pieces), Quarterly (statement pieces)"
         },
-        goals: ["Daily wear jewelry", "Gifts for occasions"],
-        pain_points: ["High prices for gold", "Limited lightweight options"]
+        goals: ["Trendy daily wear jewelry", "Thoughtful gifts for occasions", "Build jewelry collection gradually"],
+        pain_points: ["High gold prices limiting options", "Few lightweight modern designs", "Lack of flexible payment options"]
       }
     ];
 
@@ -185,7 +188,7 @@ serve(async (req) => {
         user_id: userId,
         persona_id: personaId,
         type: type,
-        status: 'approved',
+        status: 'pending_approval', // Changed from 'approved' to require owner approval
         title: type === 'post' 
           ? `Diwali Special Day ${i + 1}` 
           : `Reel: Festival Collection ${i + 1}`,
