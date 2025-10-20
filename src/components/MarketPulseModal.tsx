@@ -8,7 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
 import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MarketPulseModalProps {
@@ -36,7 +36,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   const [userInstagram, setUserInstagram] = useState(() => 
     localStorage.getItem('userInstagram') || 'rashpinder85'
   );
-  const [competitorAnalysis, setCompetitorAnalysis] = useState<Record<string, any>>({});
 
   const { data: marketData } = useQuery({
     queryKey: ['market-data'],
@@ -49,54 +48,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
       return data;
     }
   });
-
-  const { data: businessDetails } = useQuery({
-    queryKey: ['business-details'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from('business_details')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  // Fetch AI analysis for each competitor
-  useEffect(() => {
-    const analyzeCompetitors = async () => {
-      if (!competitors.length) return;
-      
-      for (const competitor of competitors) {
-        if (competitorAnalysis[competitor.id]) continue;
-
-        try {
-          const { data, error } = await supabase.functions.invoke('analyze-competitors', {
-            body: {
-              competitorName: competitor.brand_name,
-              userBusinessName: businessDetails?.company_name,
-              userCategory: businessDetails?.primary_segments?.[0] || 'jewellery',
-            },
-          });
-
-          if (!error && data?.success) {
-            setCompetitorAnalysis(prev => ({
-              ...prev,
-              [competitor.id]: data.data,
-            }));
-          }
-        } catch (error) {
-          console.error('Error analyzing competitor:', error);
-        }
-      }
-    };
-
-    analyzeCompetitors();
-  }, [competitors, businessDetails]);
 
   // Get current gold rate (latest entry)
   const currentGoldRate = marketData?.[0]?.gold_price || 7500;
@@ -241,20 +192,28 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             {/* Competitor Analysis Tab */}
             <TabsContent value="competitors" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {competitors.map((competitor: any) => {
-                  const analysis = competitorAnalysis[competitor.id] || {
-                    relevanceScore: 85,
-                    region: 'Pan-India',
-                    competitorInsight: 'Loading competitive analysis...',
-                    isAiSelected: false,
-                  };
+                {competitors.map((competitor: any, index: number) => {
+                  // Calculate relevance score based on multiple factors
+                  const baseScore = 85;
+                  const categoryBonus = competitor.category?.toLowerCase().includes('gold') ? 5 : 0;
+                  const recentUpdateBonus = competitor.major_update ? 5 : 0;
+                  const innovationBonus = competitor.product_innovation ? 5 : 0;
+                  const relevanceScore = Math.min(100, baseScore + categoryBonus + recentUpdateBonus + innovationBonus);
+                  
+                  const isAiSelected = relevanceScore >= 90;
+                  const region = "Pan-India"; // Default - could be enhanced with actual data
+                  
                   const instagramHandle = competitor?.instagram_handle || competitor.brand_name.toLowerCase().replace(/\s+/g, '');
                   const socialMediaLinks = competitor?.social_media_links || {};
                   const website = socialMediaLinks?.website || `https://www.${competitor.brand_name.toLowerCase().replace(/\s+/g, '')}.com`;
                   
+                  // Generate competitive insight
+                  const competitorInsight = competitor.competitor_insights || 
+                    `Major direct competitor in the ${competitor.category || 'jewellery'} segment with extensive market presence and diverse product offerings, representing a significant share in the industry.`;
+                  
                   return (
                     <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all border-2 border-primary/20 relative">
-                      {analysis.isAiSelected && (
+                      {isAiSelected && (
                         <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
                           ✓ AI Selected
                         </Badge>
@@ -269,7 +228,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         <div className="space-y-3">
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Region:</span>
-                            <span className="font-semibold">{analysis.region}</span>
+                            <span className="font-semibold">{region}</span>
                           </div>
 
                           <div className="flex justify-between items-center">
@@ -280,12 +239,12 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">Relevance Score:</span>
-                              <span className="font-bold text-primary text-lg">{analysis.relevanceScore}/100</span>
+                              <span className="font-bold text-primary text-lg">{relevanceScore}/100</span>
                             </div>
                             <div className="h-2 bg-muted rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all"
-                                style={{ width: `${analysis.relevanceScore}%` }}
+                                style={{ width: `${relevanceScore}%` }}
                               />
                             </div>
                           </div>
@@ -349,7 +308,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                           </div>
                           <div className="bg-muted/30 p-3 rounded-lg">
                             <p className="text-sm text-muted-foreground">
-                              {analysis.competitorInsight}
+                              {competitorInsight}
                             </p>
                           </div>
                         </div>
