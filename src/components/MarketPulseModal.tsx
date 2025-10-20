@@ -191,22 +191,23 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
           </Card>
 
           {/* Tabs for different sections */}
-          <Tabs defaultValue="social" className="w-full">
+          <Tabs defaultValue="positioning" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="social">Follow Competitors</TabsTrigger>
+              <TabsTrigger value="positioning">Market Positioning</TabsTrigger>
               <TabsTrigger value="competitors">Competitor Analysis</TabsTrigger>
               <TabsTrigger value="trends">10-Year Trends</TabsTrigger>
             </TabsList>
 
-            {/* Follow Competitors Tab */}
-            <TabsContent value="social" className="space-y-6 mt-6">
-              <p className="text-muted-foreground mb-4">Connect with competitors on social media and visit their websites</p>
+            {/* Market Positioning Tab */}
+            <TabsContent value="positioning" className="space-y-6 mt-6">
+              <p className="text-muted-foreground mb-4">Understand how competitors position themselves in the market</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {competitors.map((competitor: any) => {
-                  const instagramHandle = competitor?.instagram_handle || competitor.brand_name.toLowerCase().replace(/\s+/g, '');
-                  const socialMediaLinks = competitor?.social_media_links || {};
-                  const website = socialMediaLinks?.website || `https://www.${competitor.brand_name.toLowerCase().replace(/\s+/g, '')}.com`;
+                  const analysis = competitorAnalysis[competitor.id];
+                  const region = analysis?.region || "Pan-India";
+                  const relevanceScore = analysis?.relevanceScore || 85;
+                  const category = analysis?.category || competitor.category || "Jewellery";
                   
                   return (
                     <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all">
@@ -214,36 +215,30 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         <div className="flex items-start justify-between">
                           <div>
                             <h4 className="font-bold text-xl mb-1">{competitor.brand_name}</h4>
-                            <Badge variant="outline">{competitor.category}</Badge>
+                            <Badge variant="outline">{category}</Badge>
                           </div>
+                          <Badge variant="secondary" className="text-lg px-3 py-1">
+                            {relevanceScore}/100
+                          </Badge>
                         </div>
 
                         <div className="space-y-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium min-w-[100px]">Instagram:</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
-                              className="gap-2 flex-1"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              @{instagramHandle}
-                            </Button>
+                            <span className="text-sm font-medium min-w-[120px]">Market Region:</span>
+                            <Badge variant="default">{region}</Badge>
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium min-w-[100px]">Website:</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(website, '_blank')}
-                              className="gap-2 flex-1"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              Visit Website
-                            </Button>
+                            <span className="text-sm font-medium min-w-[120px]">Primary Segment:</span>
+                            <span className="text-sm">{category}</span>
                           </div>
+
+                          {competitor.product_innovation && (
+                            <div className="pt-3 border-t">
+                              <span className="text-sm font-medium block mb-1">Market Differentiator:</span>
+                              <p className="text-sm text-muted-foreground">{competitor.product_innovation}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </Card>
