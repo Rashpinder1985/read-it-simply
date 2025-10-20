@@ -272,8 +272,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                       data={(() => {
                         const regionCounts: Record<string, number> = {};
                         competitors.forEach((competitor: any) => {
-                          const analysis = competitorAnalysis[competitor.id];
-                          const region = analysis?.region || "Pan-India";
+                          const region = competitor.region || "Pan-India";
                           regionCounts[region] = (regionCounts[region] || 0) + 1;
                         });
                         return Object.entries(regionCounts).map(([region, count]) => ({
@@ -293,8 +292,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                       {(() => {
                         const regionCounts: Record<string, number> = {};
                         competitors.forEach((competitor: any) => {
-                          const analysis = competitorAnalysis[competitor.id];
-                          const region = analysis?.region || "Pan-India";
+                          const region = competitor.region || "Pan-India";
                           regionCounts[region] = (regionCounts[region] || 0) + 1;
                         });
                         const colors = ['#8b5cf6', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#ec4899'];
@@ -326,8 +324,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                     data={(() => {
                       const categoryCounts: Record<string, number> = {};
                       competitors.forEach((competitor: any) => {
-                        const analysis = competitorAnalysis[competitor.id];
-                        const category = analysis?.category || competitor.category || "Jewellery";
+                        const category = competitor.category || "Gold & Diamond";
                         categoryCounts[category] = (categoryCounts[category] || 0) + 1;
                       });
                       return Object.entries(categoryCounts)
@@ -350,8 +347,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                       {(() => {
                         const categoryCounts: Record<string, number> = {};
                         competitors.forEach((competitor: any) => {
-                          const analysis = competitorAnalysis[competitor.id];
-                          const category = analysis?.category || competitor.category || "Jewellery";
+                          const category = competitor.category || "Gold & Diamond";
                           categoryCounts[category] = (categoryCounts[category] || 0) + 1;
                         });
                         return Object.entries(categoryCounts)
@@ -419,8 +415,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                       
                       // Count competitor categories
                       competitors.forEach((competitor: any) => {
-                        const analysis = competitorAnalysis[competitor.id];
-                        const category = analysis?.category || competitor.category || "Jewellery";
+                        const category = competitor.category || "Gold & Diamond";
                         if (!categoryCounts[category]) {
                           categoryCounts[category] = { competitors: 0, yourFocus: 0 };
                         }
