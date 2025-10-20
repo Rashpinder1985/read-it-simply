@@ -220,12 +220,12 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   const socialActivity = competitor.social_media_activity as any;
                   const metrics = competitor.engagement_metrics as any;
                   
-                  // Public media and official sources - all safe, non-blocked links
-                  const publicLinks = [
-                    { platform: 'Google Search', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' jewelry')}`, icon: 'ExternalLink' },
-                    { platform: 'Latest News', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' jewelry news')}&tbm=nws`, icon: 'ExternalLink' },
-                    { platform: 'Market Analysis', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' market share analysis')}`, icon: 'ExternalLink' },
-                    { platform: 'Customer Reviews', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' customer reviews jewelry')}`, icon: 'ExternalLink' },
+                  // Display information sources without external links
+                  const informationSources = [
+                    { platform: 'Company Website', info: `${competitor.brand_name}.com` },
+                    { platform: 'Industry Presence', info: 'National & International Markets' },
+                    { platform: 'Brand Recognition', info: competitor.category },
+                    { platform: 'Market Position', info: 'Established Jeweler' },
                   ];
 
                   return (
@@ -272,22 +272,18 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
                         <div>
                           <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-                            Public Media & Sources
-                            <Badge variant="outline" className="text-xs">For Research</Badge>
+                            Brand Information
+                            <Badge variant="outline" className="text-xs">Public Data</Badge>
                           </div>
                           <div className="space-y-2">
-                            {publicLinks.map((link, idx) => (
-                              <Button
+                            {informationSources.map((source, idx) => (
+                              <div
                                 key={idx}
-                                variant="outline"
-                                size="sm"
-                                className="w-full justify-start gap-2"
-                                onClick={() => window.open(link.url, '_blank')}
+                                className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
                               >
-                                <ExternalLink className="h-4 w-4" />
-                                <span className="flex-1 text-left">{link.platform}</span>
-                                <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                              </Button>
+                                <span className="text-sm font-medium">{source.platform}</span>
+                                <span className="text-sm text-muted-foreground">{source.info}</span>
+                              </div>
                             ))}
                           </div>
                         </div>
