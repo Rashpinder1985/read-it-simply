@@ -250,6 +250,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
 
   const pendingContent = content?.filter(c => c.status === 'pending_approval') || [];
   const approvedContent = content?.filter(c => c.status === 'approved') || [];
+  const rejectedContent = content?.filter(c => c.status === 'rejected') || [];
   const posts = pendingContent.filter(c => c.type === 'post');
   const reels = pendingContent.filter(c => c.type === 'reel');
 
@@ -547,7 +548,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
           </TabsContent>
 
           <TabsContent value="stats" className="mt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <Card className="p-4">
                 <div className="text-sm text-muted-foreground mb-1">Total Generated</div>
                 <div className="text-2xl font-bold">{content?.length || 0}</div>
@@ -561,10 +562,45 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
                 <div className="text-2xl font-bold text-green-600">{approvedContent.length}</div>
               </Card>
               <Card className="p-4">
-                <div className="text-sm text-muted-foreground mb-1">Posts</div>
-                <div className="text-2xl font-bold">{content?.filter(c => c.type === 'post').length || 0}</div>
+                <div className="text-sm text-muted-foreground mb-1">Rejected</div>
+                <div className="text-2xl font-bold text-red-600">{rejectedContent.length}</div>
               </Card>
             </div>
+
+            {rejectedContent.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  Rejected Content
+                </h3>
+                <div className="space-y-3">
+                  {rejectedContent.map(item => (
+                    <Card key={item.id} className="p-4 border-red-200">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                          {item.type === 'post' ? <FileText className="h-6 w-6 text-red-500" /> : <Video className="h-6 w-6 text-red-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold truncate">{item.title}</h4>
+                              <p className="text-sm text-muted-foreground truncate">{item.description}</p>
+                            </div>
+                            <Badge variant="outline" className="ml-2 flex-shrink-0 border-red-600 text-red-600">{item.type}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{item.content_text}</p>
+                          <div className="flex items-center gap-2 text-sm p-2 bg-red-50 dark:bg-red-950/20 rounded">
+                            <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                            <span className="text-red-600 font-medium">Reason:</span>
+                            <span className="text-red-700 dark:text-red-400">{item.rejection_reason}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
