@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
-import { TrendingUp, TrendingDown, ExternalLink, Instagram, Facebook, Twitter, Linkedin } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -54,21 +54,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   }, {}) || {};
 
   const competitors = Object.values(competitorsByBrand);
-
-  const getSocialIcon = (platform: string) => {
-    switch (platform.toLowerCase()) {
-      case 'instagram':
-        return <Instagram className="h-4 w-4" />;
-      case 'facebook':
-        return <Facebook className="h-4 w-4" />;
-      case 'twitter':
-        return <Twitter className="h-4 w-4" />;
-      case 'linkedin':
-        return <Linkedin className="h-4 w-4" />;
-      default:
-        return <ExternalLink className="h-4 w-4" />;
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -235,11 +220,12 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   const socialActivity = competitor.social_media_activity as any;
                   const metrics = competitor.engagement_metrics as any;
                   
-                  // Mock social media links (you can replace with real data from database)
-                  const socialLinks = [
-                    { platform: 'Instagram', url: `https://instagram.com/${competitor.brand_name.toLowerCase().replace(/\s/g, '')}`, verified: true },
-                    { platform: 'Facebook', url: `https://facebook.com/${competitor.brand_name.toLowerCase().replace(/\s/g, '')}`, verified: true },
-                    { platform: 'Twitter', url: `https://twitter.com/${competitor.brand_name.toLowerCase().replace(/\s/g, '')}`, verified: false },
+                  // Public media and official sources
+                  const publicLinks = [
+                    { platform: 'Official Website', url: `https://www.${competitor.brand_name.toLowerCase().replace(/\s/g, '')}.com`, icon: 'ExternalLink' },
+                    { platform: 'News Coverage', url: `https://www.google.com/search?q=${competitor.brand_name}+jewelry+news&tbm=nws`, icon: 'ExternalLink' },
+                    { platform: 'Industry Reports', url: `https://www.google.com/search?q=${competitor.brand_name}+market+analysis`, icon: 'ExternalLink' },
+                    { platform: 'Customer Reviews', url: `https://www.google.com/search?q=${competitor.brand_name}+reviews`, icon: 'ExternalLink' },
                   ];
 
                   return (
@@ -286,11 +272,11 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
                         <div>
                           <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-                            Social Media Links
-                            <Badge variant="outline" className="text-xs">For Validation</Badge>
+                            Public Media & Sources
+                            <Badge variant="outline" className="text-xs">For Research</Badge>
                           </div>
                           <div className="space-y-2">
-                            {socialLinks.map((link, idx) => (
+                            {publicLinks.map((link, idx) => (
                               <Button
                                 key={idx}
                                 variant="outline"
@@ -298,12 +284,9 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                                 className="w-full justify-start gap-2"
                                 onClick={() => window.open(link.url, '_blank')}
                               >
-                                {getSocialIcon(link.platform)}
+                                <ExternalLink className="h-4 w-4" />
                                 <span className="flex-1 text-left">{link.platform}</span>
-                                {link.verified && (
-                                  <Badge variant="secondary" className="text-xs">Verified</Badge>
-                                )}
-                                <ExternalLink className="h-3 w-3" />
+                                <ExternalLink className="h-3 w-3 text-muted-foreground" />
                               </Button>
                             ))}
                           </div>
