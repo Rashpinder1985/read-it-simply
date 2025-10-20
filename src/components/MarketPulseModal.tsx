@@ -592,7 +592,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   timeHorizon: "long-term",
                   description: "Growing consumer preference for ethically sourced materials, lab-grown diamonds, and recycled precious metals. Environmental consciousness is driving purchasing decisions, especially among millennials and Gen Z.",
                   opportunityScore: 78,
-                  affectedCompetitors: competitors.slice(2, 6).map((c: any) => c.brand_name),
+                  affectedCompetitors: competitors.slice(2, 6).map((c: any) => c.business_name),
                   actions: [
                     "Introduce lab-grown diamond collections with clear pricing advantages.",
                     "Launch recycled gold and sustainable jewelry lines.",
@@ -610,7 +610,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   affectedCompetitors: competitors.filter((c: any) => 
                     (c.key_differentiators || '').toLowerCase().includes('custom') ||
                     (c.key_differentiators || '').toLowerCase().includes('design')
-                  ).slice(0, 4).map((c: any) => c.brand_name),
+                  ).slice(0, 4).map((c: any) => c.business_name),
                   actions: [
                     "Launch an online customization tool for selecting stones, metals, and designs.",
                     "Offer free engraving services for personal messages and dates.",
