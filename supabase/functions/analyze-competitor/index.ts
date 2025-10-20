@@ -146,6 +146,15 @@ serve(async (req) => {
     }
 
     const totalScore = marketPresenceScore + categoryMatchScore + recentActivityScore + competitiveOverlapScore;
+    
+    console.log(`Score breakdown for ${competitorName}:`, {
+      marketPresence: marketPresenceScore,
+      categoryMatch: categoryMatchScore,
+      recentActivity: recentActivityScore,
+      competitiveOverlap: competitiveOverlapScore,
+      total: totalScore,
+      searchSuccess
+    });
 
     // Advanced region detection with multi-signal analysis
     let region = 'Pan-India';
