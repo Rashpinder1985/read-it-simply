@@ -119,42 +119,54 @@ export type Database = {
         Row: {
           brand_name: string
           category: string | null
+          competitor_insights: string | null
           created_at: string | null
           engagement_metrics: Json | null
           gold_price: number | null
           id: string
           major_update: string | null
+          market_analysis: Json | null
           product_innovation: string | null
           silver_price: number | null
           social_media_activity: Json | null
+          social_media_links: Json | null
+          ten_year_data: Json | null
           timestamp: string | null
           user_id: string | null
         }
         Insert: {
           brand_name: string
           category?: string | null
+          competitor_insights?: string | null
           created_at?: string | null
           engagement_metrics?: Json | null
           gold_price?: number | null
           id?: string
           major_update?: string | null
+          market_analysis?: Json | null
           product_innovation?: string | null
           silver_price?: number | null
           social_media_activity?: Json | null
+          social_media_links?: Json | null
+          ten_year_data?: Json | null
           timestamp?: string | null
           user_id?: string | null
         }
         Update: {
           brand_name?: string
           category?: string | null
+          competitor_insights?: string | null
           created_at?: string | null
           engagement_metrics?: Json | null
           gold_price?: number | null
           id?: string
           major_update?: string | null
+          market_analysis?: Json | null
           product_innovation?: string | null
           silver_price?: number | null
           social_media_activity?: Json | null
+          social_media_links?: Json | null
+          ten_year_data?: Json | null
           timestamp?: string | null
           user_id?: string | null
         }
