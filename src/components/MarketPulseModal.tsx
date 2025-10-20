@@ -8,7 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
 import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MarketPulseModalProps {
@@ -36,6 +36,8 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   const [userInstagram, setUserInstagram] = useState(() => 
     localStorage.getItem('userInstagram') || 'rashpinder85'
   );
+  const [competitorAnalysis, setCompetitorAnalysis] = useState<Record<string, any>>({});
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const { data: marketData } = useQuery({
     queryKey: ['market-data'],
@@ -44,6 +46,22 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
         .from('market_data')
         .select('*')
         .order('timestamp', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: businessDetails } = useQuery({
+    queryKey: ['business-details'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('business_details')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
       if (error) throw error;
       return data;
     }
@@ -63,6 +81,51 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   }, {}) || {};
 
   const competitors = Object.values(competitorsByBrand);
+
+  // Analyze competitors with real-time web search
+  useEffect(() => {
+    const analyzeCompetitors = async () => {
+      if (!competitors.length || !open) return;
+      
+      setIsAnalyzing(true);
+      
+      for (const competitor of competitors) {
+        const compData = competitor as any;
+        // Skip if already analyzed
+        if (competitorAnalysis[compData.id]) continue;
+
+        try {
+          console.log('Analyzing competitor:', compData.brand_name);
+          
+          const { data, error } = await supabase.functions.invoke('analyze-competitor', {
+            body: {
+              competitorName: compData.brand_name,
+              userBusinessName: businessDetails?.company_name || '',
+              userCategory: businessDetails?.primary_segments?.[0] || 'jewellery',
+            },
+          });
+
+          if (error) {
+            console.error('Error analyzing competitor:', error);
+            continue;
+          }
+
+          if (data?.success) {
+            setCompetitorAnalysis(prev => ({
+              ...prev,
+              [compData.id]: data.data,
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to analyze competitor:', error);
+        }
+      }
+      
+      setIsAnalyzing(false);
+    };
+
+    analyzeCompetitors();
+  }, [competitors, open, businessDetails]);
 
   const saveInstagramHandle = () => {
     localStorage.setItem('userInstagram', userInstagram);
@@ -193,29 +256,31 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             <TabsContent value="competitors" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {competitors.map((competitor: any, index: number) => {
-                  // Calculate relevance score based on multiple factors
-                  const baseScore = 85;
-                  const categoryBonus = competitor.category?.toLowerCase().includes('gold') ? 5 : 0;
-                  const recentUpdateBonus = competitor.major_update ? 5 : 0;
-                  const innovationBonus = competitor.product_innovation ? 5 : 0;
-                  const relevanceScore = Math.min(100, baseScore + categoryBonus + recentUpdateBonus + innovationBonus);
+                  const analysis = competitorAnalysis[competitor.id];
+                  const isLoading = !analysis && isAnalyzing;
                   
-                  const isAiSelected = relevanceScore >= 90;
-                  const region = "Pan-India"; // Default - could be enhanced with actual data
+                  // Use analysis data if available, otherwise use default values
+                  const relevanceScore = analysis?.relevanceScore || 85;
+                  const isAiSelected = analysis?.isAiSelected || false;
+                  const region = analysis?.region || "Pan-India";
+                  const competitorInsight = analysis?.competitorInsight || 
+                    (isLoading ? "Analyzing competitor with real-time market data..." : 
+                     `Major competitor in the ${competitor.category || 'jewellery'} segment with significant market presence.`);
                   
                   const instagramHandle = competitor?.instagram_handle || competitor.brand_name.toLowerCase().replace(/\s+/g, '');
                   const socialMediaLinks = competitor?.social_media_links || {};
                   const website = socialMediaLinks?.website || `https://www.${competitor.brand_name.toLowerCase().replace(/\s+/g, '')}.com`;
-                  
-                  // Generate competitive insight
-                  const competitorInsight = competitor.competitor_insights || 
-                    `Major direct competitor in the ${competitor.category || 'jewellery'} segment with extensive market presence and diverse product offerings, representing a significant share in the industry.`;
                   
                   return (
                     <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all border-2 border-primary/20 relative">
                       {isAiSelected && (
                         <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
                           ✓ AI Selected
+                        </Badge>
+                      )}
+                      {isLoading && (
+                        <Badge className="absolute top-4 right-4 bg-accent text-accent-foreground animate-pulse">
+                          Analyzing...
                         </Badge>
                       )}
                       
