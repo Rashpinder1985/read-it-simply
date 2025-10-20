@@ -50,6 +50,72 @@ export type Database = {
         }
         Relationships: []
       }
+      competitors: {
+        Row: {
+          average_price_range: string | null
+          brand_names: string | null
+          business_name: string
+          category: string | null
+          city: string | null
+          created_at: string | null
+          facebook_name: string | null
+          facebook_url: string | null
+          hq_address: string | null
+          id: string
+          instagram_handle: string | null
+          instagram_url: string | null
+          listed_on_nse: boolean | null
+          number_of_stores: string | null
+          owner_name: string | null
+          region: string | null
+          scope: Database["public"]["Enums"]["competitor_scope"]
+          youtube_name: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          average_price_range?: string | null
+          brand_names?: string | null
+          business_name: string
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          facebook_name?: string | null
+          facebook_url?: string | null
+          hq_address?: string | null
+          id?: string
+          instagram_handle?: string | null
+          instagram_url?: string | null
+          listed_on_nse?: boolean | null
+          number_of_stores?: string | null
+          owner_name?: string | null
+          region?: string | null
+          scope: Database["public"]["Enums"]["competitor_scope"]
+          youtube_name?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          average_price_range?: string | null
+          brand_names?: string | null
+          business_name?: string
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          facebook_name?: string | null
+          facebook_url?: string | null
+          hq_address?: string | null
+          id?: string
+          instagram_handle?: string | null
+          instagram_url?: string | null
+          listed_on_nse?: boolean | null
+          number_of_stores?: string | null
+          owner_name?: string | null
+          region?: string | null
+          scope?: Database["public"]["Enums"]["competitor_scope"]
+          youtube_name?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       content: {
         Row: {
           approved_at: string | null
@@ -292,6 +358,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "marketing" | "content" | "assets"
+      competitor_scope:
+        | "national"
+        | "regional_north"
+        | "regional_south"
+        | "regional_east"
+        | "regional_west"
+        | "international"
+        | "online_d2c"
       content_status:
         | "draft"
         | "pending_approval"
@@ -428,6 +502,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "marketing", "content", "assets"],
+      competitor_scope: [
+        "national",
+        "regional_north",
+        "regional_south",
+        "regional_east",
+        "regional_west",
+        "international",
+        "online_d2c",
+      ],
       content_status: [
         "draft",
         "pending_approval",
