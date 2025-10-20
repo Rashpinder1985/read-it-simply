@@ -228,6 +228,25 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                     { platform: 'Market Position', info: 'Established Jeweler' },
                   ];
 
+                  // Public ad libraries and social media content (no login required)
+                  const publicAdLinks = [
+                    { 
+                      platform: 'Meta Ad Library', 
+                      url: `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=IN&q=${encodeURIComponent(competitor.brand_name)}`,
+                      description: 'View all public ads on Facebook & Instagram'
+                    },
+                    { 
+                      platform: 'YouTube Channel', 
+                      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(competitor.brand_name + ' jewelry')}`,
+                      description: 'Product videos and campaigns'
+                    },
+                    { 
+                      platform: 'LinkedIn Company', 
+                      url: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(competitor.brand_name)}`,
+                      description: 'Professional updates and news'
+                    },
+                  ];
+
                   return (
                     <Card key={competitor.id} className="p-6">
                       <div className="space-y-4">
@@ -299,6 +318,30 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                                 <span className="text-sm font-medium">{source.platform}</span>
                                 <span className="text-sm text-muted-foreground">{source.info}</span>
                               </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-sm font-semibold mb-3 flex items-center gap-2">
+                            Public Ads & Media
+                            <Badge variant="outline" className="text-xs">No Login Required</Badge>
+                          </div>
+                          <div className="space-y-2">
+                            {publicAdLinks.map((link, idx) => (
+                              <Button
+                                key={idx}
+                                variant="outline"
+                                size="sm"
+                                className="w-full justify-start gap-2 h-auto py-3"
+                                onClick={() => window.open(link.url, '_blank')}
+                              >
+                                <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                                <div className="flex-1 text-left">
+                                  <div className="font-medium">{link.platform}</div>
+                                  <div className="text-xs text-muted-foreground">{link.description}</div>
+                                </div>
+                              </Button>
                             ))}
                           </div>
                         </div>
