@@ -4,13 +4,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
-import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink, Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface MarketPulseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface SearchResult {
+  answer: string;
+  sources: Array<{
+    title: string;
+    url: string;
+    content: string;
+    score: number;
+  }>;
 }
 
 // Mock 10-year historical data generator
@@ -28,6 +40,11 @@ const generate10YearData = (currentPrice: number) => {
 };
 
 export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) => {
+  const { toast } = useToast();
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
   const { data: marketData } = useQuery({
     queryKey: ['market-data'],
     queryFn: async () => {
@@ -54,6 +71,34 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   }, {}) || {};
 
   const competitors = Object.values(competitorsByBrand);
+
+  const searchMarketData = async (brand: string, searchType: 'market_analysis' | 'social_engagement' | 'news') => {
+    setIsSearching(true);
+    setSelectedBrand(brand);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('market-search', {
+        body: { brand, searchType }
+      });
+
+      if (error) throw error;
+
+      setSearchResults(data);
+      toast({
+        title: "Search Complete",
+        description: `Found verified data for ${brand}`,
+      });
+    } catch (error: any) {
+      console.error('Search error:', error);
+      toast({
+        title: "Search Failed",
+        description: error.message || "Failed to fetch market data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -308,23 +353,80 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
                         <div>
                           <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-                            Social Media Analytics
-                            <Badge variant="outline" className="text-xs">Engagement Data</Badge>
+                            Verified Market Research
+                            <Badge variant="outline" className="text-xs">Web Search</Badge>
                           </div>
-                          <div className="space-y-3">
-                            {socialMediaData.map((social, idx) => (
-                              <div
-                                key={idx}
-                                className="p-3 bg-gradient-to-r from-accent/5 to-primary/5 rounded-lg border"
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium">{social.platform}</span>
-                                  <Badge variant="secondary" className="text-xs">{social.data}</Badge>
+                          <div className="space-y-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => searchMarketData(competitor.brand_name, 'market_analysis')}
+                              disabled={isSearching}
+                            >
+                              {isSearching && selectedBrand === competitor.brand_name ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4 mr-2" />
+                              )}
+                              Market Analysis
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => searchMarketData(competitor.brand_name, 'social_engagement')}
+                              disabled={isSearching}
+                            >
+                              {isSearching && selectedBrand === competitor.brand_name ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4 mr-2" />
+                              )}
+                              Social Media Data
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => searchMarketData(competitor.brand_name, 'news')}
+                              disabled={isSearching}
+                            >
+                              {isSearching && selectedBrand === competitor.brand_name ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4 mr-2" />
+                              )}
+                              Latest News
+                            </Button>
+                          </div>
+
+                          {searchResults && selectedBrand === competitor.brand_name && (
+                            <div className="mt-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
+                              <h5 className="font-semibold text-sm mb-2">Search Results:</h5>
+                              <p className="text-sm text-muted-foreground mb-3">{searchResults.answer}</p>
+                              
+                              {searchResults.sources.length > 0 && (
+                                <div className="space-y-2">
+                                  <p className="text-xs font-semibold">Sources:</p>
+                                  {searchResults.sources.slice(0, 3).map((source, idx) => (
+                                    <div key={idx} className="text-xs p-2 bg-background rounded border">
+                                      <a 
+                                        href={source.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-accent hover:underline flex items-center gap-1"
+                                      >
+                                        {source.title}
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                      <p className="text-muted-foreground mt-1 line-clamp-2">{source.content}</p>
+                                    </div>
+                                  ))}
                                 </div>
-                                <p className="text-xs text-muted-foreground">{social.metric}</p>
-                              </div>
-                            ))}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <div className="pt-4 border-t">
