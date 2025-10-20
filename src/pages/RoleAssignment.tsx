@@ -10,6 +10,8 @@ const RoleAssignment = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
+  const defaultPassword = "Welcome@123";
+  
   const usersToCreate = [
     { email: "yogesh@digitaldogscorp.com", role: "admin", fullName: "Yogesh" },
     { email: "ambarish@digitaldogscorp.com", role: "admin", fullName: "Ambarish" },
@@ -57,6 +59,7 @@ const RoleAssignment = () => {
               email: user.email,
               role: user.role,
               fullName: user.fullName,
+              password: defaultPassword,
             }),
           }
         );
@@ -107,6 +110,13 @@ const RoleAssignment = () => {
               <li>ambarish@digitaldogscorp.in - Content Editor</li>
               <li>goldy13guri@gmail.com - Asset Manager</li>
             </ul>
+          </div>
+          <div className="p-4 bg-muted rounded-md">
+            <p className="text-sm font-semibold mb-1">Default Password:</p>
+            <code className="text-sm bg-background px-2 py-1 rounded">{defaultPassword}</code>
+            <p className="text-xs text-muted-foreground mt-2">
+              All users will be created with this password. Please change it after first login.
+            </p>
           </div>
           <Button 
             onClick={createUsersWithRoles} 
