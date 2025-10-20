@@ -114,11 +114,11 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
         if (competitorAnalysis[compData.id]) continue;
 
         try {
-          console.log('Analyzing competitor:', compData.brand_name);
+          console.log('Analyzing competitor:', compData.business_name);
           
           const { data, error } = await supabase.functions.invoke('analyze-competitor', {
             body: {
-              competitorName: compData.brand_name,
+              competitorName: compData.business_name,
               userBusinessName: businessDetails?.company_name || '',
               userCategory: businessDetails?.primary_segments?.[0] || 'jewellery',
             },
@@ -489,9 +489,9 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         if (combined.includes('expanding') || combined.includes('growth')) score += 10;
                         
                         return {
-                          name: competitor.brand_name?.length > 15 
-                            ? competitor.brand_name.substring(0, 13) + '...' 
-                            : competitor.brand_name,
+                          name: competitor.business_name?.length > 15 
+                            ? competitor.business_name.substring(0, 13) + '...' 
+                            : competitor.business_name,
                           score,
                         };
                       })
@@ -559,7 +559,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   timeHorizon: "short-term",
                   description: "Increasing demand from consumers for clear and transparent pricing, including detailed breakdowns of gold weight, diamond carat, making charges, and stone costs. Comprehensive product information, including certifications and ethical sourcing details, builds trust and confidence.",
                   opportunityScore: 70,
-                  affectedCompetitors: competitors.slice(0, 5).map((c: any) => c.brand_name),
+                  affectedCompetitors: competitors.slice(0, 5).map((c: any) => c.business_name),
                   actions: [
                     "Provide a detailed breakdown of pricing components (gold weight, diamond weight, making charges, stone cost) for all products.",
                     "Ensure all gold and diamond jewellery is certified by recognized authorities (e.g., BIS Hallmark for gold, GIA/IGI for diamonds).",
@@ -577,7 +577,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   affectedCompetitors: competitors.filter((c: any) => 
                     (c.key_differentiators || '').toLowerCase().includes('digital') ||
                     (c.key_differentiators || '').toLowerCase().includes('online')
-                  ).slice(0, 4).map((c: any) => c.brand_name),
+                  ).slice(0, 4).map((c: any) => c.business_name),
                   actions: [
                     "Implement virtual try-on technology using AR/AI for rings, necklaces, and earrings.",
                     "Develop a mobile-optimized shopping experience with one-click checkout.",
@@ -628,7 +628,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   affectedCompetitors: competitors.filter((c: any) => 
                     (c.key_differentiators || '').toLowerCase().includes('gold') ||
                     (c.key_differentiators || '').toLowerCase().includes('investment')
-                  ).slice(0, 5).map((c: any) => c.brand_name),
+                  ).slice(0, 5).map((c: any) => c.business_name),
                   actions: [
                     "Offer certified investment-grade gold coins and bars with buyback guarantees.",
                     "Provide clear documentation of purity, weight, and certification for all investment pieces.",
