@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
-import { TrendingUp, TrendingDown, ExternalLink, Search, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,23 +16,6 @@ interface MarketPulseModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface SocialPost {
-  description: string;
-  postType: string;
-  designCategory: string;
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
-  imageUrl: string;
-  postUrl: string;
-}
-
-interface BrandSocialData {
-  brand: string;
-  posts: SocialPost[];
-}
 
 // Mock 10-year historical data generator
 const generate10YearData = (currentPrice: number) => {
@@ -50,8 +33,6 @@ const generate10YearData = (currentPrice: number) => {
 
 export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) => {
   const { toast } = useToast();
-  const [socialData, setSocialData] = useState<BrandSocialData[]>([]);
-  const [isLoadingSocial, setIsLoadingSocial] = useState(false);
   const [userInstagram, setUserInstagram] = useState(() => 
     localStorage.getItem('userInstagram') || 'rashpinder85'
   );
@@ -82,35 +63,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   }, {}) || {};
 
   const competitors = Object.values(competitorsByBrand);
-
-  const fetchAllSocialMedia = async () => {
-    setIsLoadingSocial(true);
-    
-    try {
-      const brandNames = competitors.map((c: any) => c.brand_name);
-      
-      const { data, error } = await supabase.functions.invoke('market-pulse-social', {
-        body: { brands: brandNames }
-      });
-
-      if (error) throw error;
-
-      setSocialData(data || []);
-      toast({
-        title: "Social Media Data Loaded",
-        description: `Found posts from ${brandNames.length} competitors`,
-      });
-    } catch (error: any) {
-      console.error('Social media fetch error:', error);
-      toast({
-        title: "Failed to Load Social Data",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingSocial(false);
-    }
-  };
 
   const saveInstagramHandle = () => {
     localStorage.setItem('userInstagram', userInstagram);
@@ -178,103 +130,63 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
           {/* Tabs for different sections */}
           <Tabs defaultValue="social" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="social">Social Media Posts</TabsTrigger>
+              <TabsTrigger value="social">Follow Competitors</TabsTrigger>
               <TabsTrigger value="competitors">Competitor Analysis</TabsTrigger>
               <TabsTrigger value="trends">10-Year Trends</TabsTrigger>
             </TabsList>
 
-            {/* Social Media Posts Tab */}
+            {/* Follow Competitors Tab */}
             <TabsContent value="social" className="space-y-6 mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <p className="text-muted-foreground">View competitor latest designs and social media posts</p>
-                <Button onClick={fetchAllSocialMedia} disabled={isLoadingSocial}>
-                  {isLoadingSocial ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Loading...</>
-                  ) : (
-                    <><Search className="h-4 w-4 mr-2" />Load Social Posts</>
-                  )}
-                </Button>
-              </div>
+              <p className="text-muted-foreground mb-4">Connect with competitors on social media and visit their websites</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {competitors.map((competitor: any) => {
+                  const instagramHandle = competitor?.instagram_handle || competitor.brand_name.toLowerCase().replace(/\s+/g, '');
+                  const socialMediaLinks = competitor?.social_media_links || {};
+                  const website = socialMediaLinks?.website || `https://www.${competitor.brand_name.toLowerCase().replace(/\s+/g, '')}.com`;
+                  
+                  return (
+                    <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-bold text-xl mb-1">{competitor.brand_name}</h4>
+                            <Badge variant="outline">{competitor.category}</Badge>
+                          </div>
+                        </div>
 
-              {socialData.length > 0 ? (
-                <div className="space-y-8">
-                  {socialData.map((brandData, idx) => {
-                    const competitor = (competitors as any[]).find((c: any) => c.brand_name === brandData.brand);
-                    const instagramHandle = competitor?.instagram_handle || brandData.brand.toLowerCase().replace(/\s+/g, '');
-                    
-                    return (
-                    <div key={idx}>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold flex items-center gap-2">
-                          {brandData.brand}
-                          <Badge variant="secondary">{brandData.posts.length} posts</Badge>
-                        </h3>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
-                                className="gap-2"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                                Follow @{instagramHandle}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Opens Instagram profile in new tab</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {brandData.posts.map((post, postIdx) => (
-                          <Card key={postIdx} className="overflow-hidden hover:shadow-lg transition-all cursor-pointer" onClick={() => window.open(post.postUrl, '_blank')}>
-                            <div className="aspect-square bg-muted relative">
-                              <img 
-                                src={post.imageUrl} 
-                                alt={post.description}
-                                className="w-full h-full object-cover"
-                              />
-                              <Badge className="absolute top-2 right-2">{post.postType}</Badge>
-                            </div>
-                            <div className="p-4 space-y-3">
-                              <p className="text-sm line-clamp-2">{post.description}</p>
-                              <Badge variant="outline">{post.designCategory}</Badge>
-                              
-                              <div className="grid grid-cols-3 gap-2 pt-2 border-t text-xs">
-                                <div className="text-center">
-                                  <div className="font-bold text-green-600">{post.engagement.likes.toLocaleString()}</div>
-                                  <div className="text-muted-foreground">Likes</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="font-bold text-blue-600">{post.engagement.comments.toLocaleString()}</div>
-                                  <div className="text-muted-foreground">Comments</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="font-bold text-amber-600">{post.engagement.shares.toLocaleString()}</div>
-                                  <div className="text-muted-foreground">Shares</div>
-                                </div>
-                              </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[100px]">Instagram:</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
+                              className="gap-2 flex-1"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              @{instagramHandle}
+                            </Button>
+                          </div>
 
-                              <Button variant="outline" size="sm" className="w-full gap-2">
-                                View on Instagram <ExternalLink className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </Card>
-                        ))}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[100px]">Website:</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(website, '_blank')}
+                              className="gap-2 flex-1"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              Visit Website
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    </Card>
                   );
-                  })}
-                </div>
-              ) : (
-                <Card className="p-12 text-center">
-                  <p className="text-muted-foreground mb-4">Click &quot;Load Social Posts&quot; to view competitor designs and latest collections</p>
-                  <Search className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                </Card>
-              )}
+                })}
+              </div>
             </TabsContent>
 
             {/* Competitor Analysis Tab */}
