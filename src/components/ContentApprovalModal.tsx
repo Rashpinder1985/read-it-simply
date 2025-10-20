@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, XCircle, FileText, Video, Edit, Save, X, Upload, Sparkles, Image as ImageIcon, Clock, Calendar } from "lucide-react";
+import { CheckCircle, XCircle, FileText, Video, Edit, Save, X, Upload, Sparkles, Image as ImageIcon, Clock, Calendar, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -38,6 +38,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
   const [generatingImage, setGeneratingImage] = useState<string | null>(null);
   const [generationType, setGenerationType] = useState<Record<string, 'image' | 'text' | 'video'>>({});
   const [folderName, setFolderName] = useState<Record<string, string>>({});
+  const [videoPrompts, setVideoPrompts] = useState<Record<string, string>>({});
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
@@ -191,11 +192,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
       } else if (type === 'text') {
         await handleGenerateText(id, item);
       } else if (type === 'video') {
-        toast({
-          title: "Coming Soon",
-          description: "Video generation is not yet available. Please check back later!",
-        });
-        setGeneratingImage(null);
+        await handleGenerateVideoPrompt(id, item);
       }
     } catch (error) {
       console.error('Generation error:', error);
@@ -204,6 +201,58 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
         description: error instanceof Error ? error.message : "Failed to generate content. Please try again.",
         variant: "destructive"
       });
+      setGeneratingImage(null);
+    }
+  };
+
+  const handleGenerateVideoPrompt = async (id: string, item: any) => {
+    try {
+      // Build comprehensive video prompt from content
+      const personaContext = item.personas ? `for ${item.personas.name} (${item.personas.segment})` : '';
+      const hashtagsContext = item.hashtags?.slice(0, 5).join(', ') || '';
+      
+      const videoPrompt = `Create a professional, engaging video reel for jewelry marketing:
+
+Title: ${item.title}
+${item.description ? `Description: ${item.description}` : ''}
+${personaContext ? `Target Audience: ${personaContext}` : ''}
+
+Content:
+${item.content_text}
+
+Visual Style:
+- Format: 9:16 vertical video (Instagram/TikTok Reels)
+- Duration: 15-30 seconds
+- Professional jewelry showcase with elegant transitions
+- Warm, luxurious lighting highlighting gold/diamond details
+- Smooth camera movements (pan, zoom, rotation)
+- Premium, high-end aesthetic
+
+Scene Suggestions:
+1. Opening: Close-up of featured jewelry piece with soft bokeh background
+2. Mid: Jewelry displayed on elegant surface with subtle props (flowers, silk fabric)
+3. Detail shots: Macro focus on intricate designs, sparkle of stones
+4. Closing: Brand logo/name with the jewelry piece
+
+${hashtagsContext ? `Themes to incorporate: ${hashtagsContext}` : ''}
+
+Music: Elegant, sophisticated background music with subtle luxury feel
+Text Overlays: Minimal, clean typography for key messages
+Color Grading: Warm, golden tones with high contrast for sparkle
+
+Additional Notes:
+- Ensure product is hero of every shot
+- Keep transitions smooth and premium feeling
+- Maintain consistent luxury brand aesthetic throughout`;
+
+      // Store the prompt
+      setVideoPrompts({ ...videoPrompts, [id]: videoPrompt });
+      
+      toast({
+        title: "Video Prompt Generated",
+        description: "A professional video prompt has been created. You can now copy it to use with video generation tools.",
+      });
+    } finally {
       setGeneratingImage(null);
     }
   };
@@ -545,6 +594,36 @@ Content snippet: ${item.content_text.substring(0, 300)}`;
                             </Button>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {videoPrompts[item.id] && item.type === 'reel' && (
+                      <div className="p-3 border rounded-lg bg-muted/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-semibold">Video Generation Prompt</Label>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              navigator.clipboard.writeText(videoPrompts[item.id]);
+                              toast({
+                                title: "Copied!",
+                                description: "Video prompt copied to clipboard",
+                              });
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copy Prompt
+                          </Button>
+                        </div>
+                        <Textarea
+                          value={videoPrompts[item.id]}
+                          readOnly
+                          className="text-xs font-mono bg-background h-32 resize-none"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Use this prompt with third-party video generation tools like Runway, Pika, or Luma Dream Machine
+                        </p>
                       </div>
                     )}
 
