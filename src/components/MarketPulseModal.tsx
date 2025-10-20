@@ -276,7 +276,22 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                             <Badge variant="outline" className="text-xs">Public Data</Badge>
                           </div>
                           <div className="space-y-2">
-                            {informationSources.map((source, idx) => (
+                            {/* Clickable website link */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-between"
+                              onClick={() => window.open(`https://www.${competitor.brand_name.toLowerCase().replace(/\s/g, '')}.com`, '_blank')}
+                            >
+                              <span className="text-sm font-medium">Company Website</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">{competitor.brand_name}.com</span>
+                                <ExternalLink className="h-3 w-3" />
+                              </div>
+                            </Button>
+                            
+                            {/* Non-clickable info cards */}
+                            {informationSources.slice(1).map((source, idx) => (
                               <div
                                 key={idx}
                                 className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
