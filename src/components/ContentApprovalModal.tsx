@@ -36,6 +36,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
   const [editForm, setEditForm] = useState<any>({});
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState<string | null>(null);
+  const [generationType, setGenerationType] = useState<Record<string, 'image' | 'text' | 'video'>>({});
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
@@ -181,8 +182,73 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
     }
   };
 
-  const handleGenerateImage = async (id: string, contentText: string, title: string, item: any) => {
+  const handleAIGenerate = async (id: string, item: any, type: 'image' | 'text' | 'video') => {
     setGeneratingImage(id);
+    try {
+      if (type === 'image') {
+        await handleGenerateImage(id, item);
+      } else if (type === 'text') {
+        await handleGenerateText(id, item);
+      } else if (type === 'video') {
+        toast({
+          title: "Coming Soon",
+          description: "Video generation is not yet available. Please check back later!",
+        });
+        setGeneratingImage(null);
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate content. Please try again.",
+        variant: "destructive"
+      });
+      setGeneratingImage(null);
+    }
+  };
+
+  const handleGenerateText = async (id: string, item: any) => {
+    try {
+      // Build prompt for text regeneration
+      const prompt = `Rewrite this ${item.type} content to make it more engaging and professional.
+
+Original Title: ${item.title}
+Original Content: ${item.content_text}
+Target Audience: ${item.personas ? `${item.personas.name} (${item.personas.segment})` : 'General'}
+
+Generate new, improved content that:
+- Is more engaging and compelling
+- Matches the tone for ${item.type === 'reel' ? 'short-form video content' : 'Instagram post'}
+- Keeps the same theme and message
+- Uses appropriate emojis
+- Is optimized for social media
+- Maximum 2-3 paragraphs
+
+Return only the new content text without any explanations.`;
+
+      const { data, error } = await supabase.functions.invoke('generate-content-text', {
+        body: { prompt }
+      });
+
+      if (error) throw error;
+
+      if (data.text) {
+        await updateContent.mutateAsync({ 
+          id, 
+          updates: { content_text: data.text }
+        });
+
+        toast({
+          title: "Text Regenerated",
+          description: "Content has been regenerated with AI",
+        });
+      }
+    } finally {
+      setGeneratingImage(null);
+    }
+  };
+
+  const handleGenerateImage = async (id: string, item: any) => {
     try {
       // Build a comprehensive prompt from all content details
       const contentType = item.type === 'reel' ? 'video thumbnail' : 'Instagram post';
@@ -191,7 +257,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
       
       // Extract key themes from content
       let visualTheme = '';
-      const lowerContent = contentText.toLowerCase();
+      const lowerContent = item.content_text.toLowerCase();
       if (lowerContent.includes('diwali') || lowerContent.includes('festival of lights')) {
         visualTheme = 'Diwali themed with diyas, warm golden lighting, festive atmosphere';
       } else if (lowerContent.includes('wedding') || lowerContent.includes('bridal')) {
@@ -206,7 +272,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
       
       const prompt = `Create a professional, high-quality ${contentType} image for a jewelry marketing campaign.
 
-Title: ${title}
+Title: ${item.title}
 Context: ${item.description || ''}
 ${personaContext ? `Target Audience: ${personaContext}` : ''}
 ${hashtagsContext ? `Themes: ${hashtagsContext}` : ''}
@@ -223,7 +289,7 @@ Requirements:
 - High resolution, sharp focus on jewelry
 ${item.type === 'reel' ? '- Dynamic, engaging composition for video thumbnail' : '- Static, elegant product showcase'}
 
-Content snippet: ${contentText.substring(0, 300)}`;
+Content snippet: ${item.content_text.substring(0, 300)}`;
 
       const { data, error } = await supabase.functions.invoke('generate-content-image', {
         body: { prompt }
@@ -260,13 +326,6 @@ Content snippet: ${contentText.substring(0, 300)}`;
           description: "AI-generated image has been attached to the content",
         });
       }
-    } catch (error) {
-      console.error('Generation error:', error);
-      toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate image. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setGeneratingImage(null);
     }
@@ -428,24 +487,47 @@ Content snippet: ${contentText.substring(0, 300)}`;
                             if (file) handleMediaUpload(item.id, file);
                           }}
                         />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleGenerateImage(item.id, item.content_text, item.title, item)}
-                          disabled={generatingImage === item.id}
-                        >
-                          {generatingImage === item.id ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-1" />
-                              AI Generate
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex gap-1">
+                          <Select 
+                            value={generationType[item.id] || (item.type === 'post' ? 'image' : 'text')} 
+                            onValueChange={(value: 'image' | 'text' | 'video') => setGenerationType({...generationType, [item.id]: value})}
+                          >
+                            <SelectTrigger className="w-[110px] h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background z-50">
+                              {item.type === 'post' ? (
+                                <>
+                                  <SelectItem value="image">Image</SelectItem>
+                                  <SelectItem value="text">Text</SelectItem>
+                                </>
+                              ) : (
+                                <>
+                                  <SelectItem value="text">Text</SelectItem>
+                                  <SelectItem value="video">Video</SelectItem>
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAIGenerate(item.id, item, generationType[item.id] || (item.type === 'post' ? 'image' : 'text'))}
+                            disabled={generatingImage === item.id}
+                          >
+                            {generatingImage === item.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-1" />
+                                AI Generate
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     )}
 
