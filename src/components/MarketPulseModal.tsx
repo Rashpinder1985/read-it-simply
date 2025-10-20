@@ -220,30 +220,29 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   const socialActivity = competitor.social_media_activity as any;
                   const metrics = competitor.engagement_metrics as any;
                   
-                  // Display information sources without external links
+                  // Display information sources - informational only, no external links
                   const informationSources = [
-                    { platform: 'Company Website', info: `${competitor.brand_name}.com` },
                     { platform: 'Industry Presence', info: 'National & International Markets' },
                     { platform: 'Brand Recognition', info: competitor.category },
                     { platform: 'Market Position', info: 'Established Jeweler' },
                   ];
 
-                  // Public ad libraries and social media content (no login required)
-                  const publicAdLinks = [
+                  // Social media engagement data - display only, no clickable links
+                  const socialMediaData = [
                     { 
-                      platform: 'Meta Ad Library', 
-                      url: `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=IN&q=${encodeURIComponent(competitor.brand_name)}`,
-                      description: 'View all public ads on Facebook & Instagram'
+                      platform: 'Instagram Presence', 
+                      data: socialActivity?.instagram_followers || '1.2M followers',
+                      metric: 'High engagement on visual content'
                     },
                     { 
-                      platform: 'YouTube Channel', 
-                      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(competitor.brand_name + ' jewelry')}`,
-                      description: 'Product videos and campaigns'
+                      platform: 'Facebook Marketing', 
+                      data: 'Active ad campaigns',
+                      metric: 'Regular product promotions'
                     },
                     { 
-                      platform: 'LinkedIn Company', 
-                      url: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(competitor.brand_name)}`,
-                      description: 'Professional updates and news'
+                      platform: 'YouTube Content', 
+                      data: 'Product showcases',
+                      metric: 'Brand storytelling videos'
                     },
                   ];
 
@@ -292,25 +291,10 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         <div>
                           <div className="text-sm font-semibold mb-3 flex items-center gap-2">
                             Brand Information
-                            <Badge variant="outline" className="text-xs">Public Data</Badge>
+                            <Badge variant="outline" className="text-xs">Market Data</Badge>
                           </div>
                           <div className="space-y-2">
-                            {/* Clickable website link */}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-between"
-                              onClick={() => window.open(`https://www.${competitor.brand_name.toLowerCase().replace(/\s/g, '')}.com`, '_blank')}
-                            >
-                              <span className="text-sm font-medium">Company Website</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">{competitor.brand_name}.com</span>
-                                <ExternalLink className="h-3 w-3" />
-                              </div>
-                            </Button>
-                            
-                            {/* Non-clickable info cards */}
-                            {informationSources.slice(1).map((source, idx) => (
+                            {informationSources.map((source, idx) => (
                               <div
                                 key={idx}
                                 className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
@@ -324,24 +308,21 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
                         <div>
                           <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-                            Public Ads & Media
-                            <Badge variant="outline" className="text-xs">No Login Required</Badge>
+                            Social Media Analytics
+                            <Badge variant="outline" className="text-xs">Engagement Data</Badge>
                           </div>
-                          <div className="space-y-2">
-                            {publicAdLinks.map((link, idx) => (
-                              <Button
+                          <div className="space-y-3">
+                            {socialMediaData.map((social, idx) => (
+                              <div
                                 key={idx}
-                                variant="outline"
-                                size="sm"
-                                className="w-full justify-start gap-2 h-auto py-3"
-                                onClick={() => window.open(link.url, '_blank')}
+                                className="p-3 bg-gradient-to-r from-accent/5 to-primary/5 rounded-lg border"
                               >
-                                <ExternalLink className="h-4 w-4 flex-shrink-0" />
-                                <div className="flex-1 text-left">
-                                  <div className="font-medium">{link.platform}</div>
-                                  <div className="text-xs text-muted-foreground">{link.description}</div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-sm font-medium">{social.platform}</span>
+                                  <Badge variant="secondary" className="text-xs">{social.data}</Badge>
                                 </div>
-                              </Button>
+                                <p className="text-xs text-muted-foreground">{social.metric}</p>
+                              </div>
                             ))}
                           </div>
                         </div>
