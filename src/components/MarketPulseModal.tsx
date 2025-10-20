@@ -192,10 +192,11 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
           {/* Tabs for different sections */}
           <Tabs defaultValue="positioning" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="positioning">Market Positioning</TabsTrigger>
+              <TabsTrigger value="trends">Emerging Trends</TabsTrigger>
               <TabsTrigger value="competitors">Competitor Analysis</TabsTrigger>
-              <TabsTrigger value="trends">10-Year Trends</TabsTrigger>
+              <TabsTrigger value="historical">10-Year Trends</TabsTrigger>
             </TabsList>
 
             {/* Market Positioning Tab */}
@@ -486,6 +487,178 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
               </Card>
             </TabsContent>
 
+            {/* Emerging Trends Tab */}
+            <TabsContent value="trends" className="space-y-6 mt-6">
+              <p className="text-muted-foreground mb-4">AI-powered emerging market trends and opportunities in the jewelry industry</p>
+              
+              {[
+                {
+                  id: 1,
+                  title: "Transparency in Pricing and Product Information",
+                  impact: "medium",
+                  timeHorizon: "short-term",
+                  description: "Increasing demand from consumers for clear and transparent pricing, including detailed breakdowns of gold weight, diamond carat, making charges, and stone costs. Comprehensive product information, including certifications and ethical sourcing details, builds trust and confidence.",
+                  opportunityScore: 70,
+                  affectedCompetitors: competitors.slice(0, 5).map((c: any) => c.brand_name),
+                  actions: [
+                    "Provide a detailed breakdown of pricing components (gold weight, diamond weight, making charges, stone cost) for all products.",
+                    "Ensure all gold and diamond jewellery is certified by recognized authorities (e.g., BIS Hallmark for gold, GIA/IGI for diamonds).",
+                    "Clearly communicate ethical sourcing practices and certifications on the website and in-store.",
+                    "Implement consistent pricing across all channels – online and offline."
+                  ]
+                },
+                {
+                  id: 2,
+                  title: "Digital-First Shopping Experience",
+                  impact: "high",
+                  timeHorizon: "immediate",
+                  description: "Rapid shift toward online jewelry shopping with virtual try-on, AR visualization, and seamless omnichannel experiences. Mobile-first approach is becoming essential for reaching younger demographics.",
+                  opportunityScore: 85,
+                  affectedCompetitors: competitors.filter((c: any) => 
+                    (c.key_differentiators || '').toLowerCase().includes('digital') ||
+                    (c.key_differentiators || '').toLowerCase().includes('online')
+                  ).slice(0, 4).map((c: any) => c.brand_name),
+                  actions: [
+                    "Implement virtual try-on technology using AR/AI for rings, necklaces, and earrings.",
+                    "Develop a mobile-optimized shopping experience with one-click checkout.",
+                    "Create 360-degree product views with zoom capabilities for all jewelry pieces.",
+                    "Integrate live chat support for real-time customer queries."
+                  ]
+                },
+                {
+                  id: 3,
+                  title: "Sustainable and Ethical Jewelry",
+                  impact: "high",
+                  timeHorizon: "long-term",
+                  description: "Growing consumer preference for ethically sourced materials, lab-grown diamonds, and recycled precious metals. Environmental consciousness is driving purchasing decisions, especially among millennials and Gen Z.",
+                  opportunityScore: 78,
+                  affectedCompetitors: competitors.slice(2, 6).map((c: any) => c.brand_name),
+                  actions: [
+                    "Introduce lab-grown diamond collections with clear pricing advantages.",
+                    "Launch recycled gold and sustainable jewelry lines.",
+                    "Obtain and display responsible jewelry certifications (e.g., Responsible Jewellery Council).",
+                    "Create transparent supply chain documentation available to customers."
+                  ]
+                },
+                {
+                  id: 4,
+                  title: "Personalization and Customization",
+                  impact: "medium",
+                  timeHorizon: "short-term",
+                  description: "Rising demand for personalized jewelry with custom engravings, birthstones, and bespoke designs. Customers want unique pieces that reflect their individual style and story.",
+                  opportunityScore: 72,
+                  affectedCompetitors: competitors.filter((c: any) => 
+                    (c.key_differentiators || '').toLowerCase().includes('custom') ||
+                    (c.key_differentiators || '').toLowerCase().includes('design')
+                  ).slice(0, 4).map((c: any) => c.brand_name),
+                  actions: [
+                    "Launch an online customization tool for selecting stones, metals, and designs.",
+                    "Offer free engraving services for personal messages and dates.",
+                    "Create a 'Design Your Own' section with CAD preview capabilities.",
+                    "Implement a consultation booking system for bespoke jewelry services."
+                  ]
+                },
+                {
+                  id: 5,
+                  title: "Investment-Grade Jewelry",
+                  impact: "medium",
+                  timeHorizon: "long-term",
+                  description: "Increasing awareness of jewelry as an investment asset, particularly in high-purity gold coins, bars, and certified diamond pieces. Customers seek transparency in buyback policies and certification.",
+                  opportunityScore: 68,
+                  affectedCompetitors: competitors.filter((c: any) => 
+                    (c.key_differentiators || '').toLowerCase().includes('gold') ||
+                    (c.key_differentiators || '').toLowerCase().includes('investment')
+                  ).slice(0, 5).map((c: any) => c.brand_name),
+                  actions: [
+                    "Offer certified investment-grade gold coins and bars with buyback guarantees.",
+                    "Provide clear documentation of purity, weight, and certification for all investment pieces.",
+                    "Create an investment calculator showing potential returns based on gold price trends.",
+                    "Establish a transparent buyback policy with competitive rates."
+                  ]
+                }
+              ].map((trend) => (
+                <Card key={trend.id} className="p-6 border-2 hover:shadow-lg transition-shadow">
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-4xl font-bold text-primary/60">#{trend.id}</div>
+                        <Badge 
+                          variant={trend.impact === 'high' ? 'default' : 'secondary'}
+                          className={`${
+                            trend.impact === 'high' 
+                              ? 'bg-red-500 hover:bg-red-600' 
+                              : trend.impact === 'medium'
+                              ? 'bg-blue-500 hover:bg-blue-600'
+                              : 'bg-green-500 hover:bg-green-600'
+                          } text-white`}
+                        >
+                          {trend.impact} impact
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Title and Time Horizon */}
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold">{trend.title}</h3>
+                      <Badge variant="outline" className="border-muted-foreground/30">
+                        {trend.timeHorizon}
+                      </Badge>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-muted-foreground leading-relaxed">
+                      {trend.description}
+                    </p>
+
+                    {/* Opportunity Score */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold">Opportunity Score</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {trend.opportunityScore}/100
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                          style={{ width: `${trend.opportunityScore}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Affected Competitors */}
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-lg">Affected Competitors</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {trend.affectedCompetitors.map((competitor, idx) => (
+                          <Badge 
+                            key={idx} 
+                            className="bg-primary/10 text-primary hover:bg-primary/20 px-4 py-1.5"
+                          >
+                            {competitor}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recommended Actions */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-lg">Recommended Actions</h4>
+                      <ul className="space-y-2">
+                        {trend.actions.map((action, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-muted-foreground">
+                            <span className="text-primary mt-1">•</span>
+                            <span>{action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </TabsContent>
+
             {/* Competitor Analysis Tab */}
             <TabsContent value="competitors" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -618,8 +791,8 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
               </div>
             </TabsContent>
 
-            {/* 10-Year Trends Tab */}
-            <TabsContent value="trends" className="space-y-6 mt-6">
+            {/* 10-Year Historical Trends Tab */}
+            <TabsContent value="historical" className="space-y-6 mt-6">
               {competitors.map((competitor: any) => {
                 const tenYearData = generate10YearData(Number(competitor.gold_price));
                 
