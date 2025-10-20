@@ -16,7 +16,8 @@ import {
   Target,
   Sparkles,
   Clock,
-  Building2
+  Building2,
+  UserCog
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -33,12 +34,37 @@ const Dashboard = () => {
   const [personasOpen, setPersonasOpen] = useState(false);
   const [contentApprovalOpen, setContentApprovalOpen] = useState(false);
   const [contentSchedulingOpen, setContentSchedulingOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        setUserRole(data?.role || null);
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+      } finally {
+        setRoleLoading(false);
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
 
   const { data: personas } = useQuery({
     queryKey: ['personas'],
@@ -70,7 +96,7 @@ const Dashboard = () => {
   const pendingContent = content?.filter(c => c.status === 'pending_approval').length || 0;
   const approvedContent = content?.filter(c => c.status === 'approved').length || 0;
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
         <div className="text-center">
@@ -80,6 +106,9 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const isAdmin = userRole === 'admin';
+  const showUserManagement = isAdmin || userRole === 'marketing' || userRole === 'content' || userRole === 'assets';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -91,16 +120,27 @@ const Dashboard = () => {
       <ContentSchedulingModal open={contentSchedulingOpen} onOpenChange={setContentSchedulingOpen} />
       
       <main className="container mx-auto px-6 py-8">
-        {/* Business Details Button */}
-        <div className="mb-6 flex justify-end">
+        {/* Management Buttons */}
+        <div className="mb-6 flex justify-end gap-3">
           <Button 
             onClick={() => navigate("/business-details")}
             variant="outline"
             className="gap-2"
           >
             <Building2 className="h-4 w-4" />
-            Manage Business Details
+            Business Details
           </Button>
+          
+          {showUserManagement && (
+            <Button 
+              onClick={() => navigate("/user-management")}
+              variant="outline"
+              className="gap-2"
+            >
+              <UserCog className="h-4 w-4" />
+              User Management
+            </Button>
+          )}
         </div>
 
         {/* Stats Overview */}
