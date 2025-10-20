@@ -15,14 +15,22 @@ interface MarketPulseModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface SearchResult {
-  answer: string;
-  sources: Array<{
-    title: string;
-    url: string;
-    content: string;
-    score: number;
-  }>;
+interface SocialPost {
+  description: string;
+  postType: string;
+  designCategory: string;
+  engagement: {
+    likes: number;
+    comments: number;
+    shares: number;
+  };
+  imageUrl: string;
+  postUrl: string;
+}
+
+interface BrandSocialData {
+  brand: string;
+  posts: SocialPost[];
 }
 
 // Mock 10-year historical data generator
@@ -41,9 +49,8 @@ const generate10YearData = (currentPrice: number) => {
 
 export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) => {
   const { toast } = useToast();
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const [socialData, setSocialData] = useState<BrandSocialData[]>([]);
+  const [isLoadingSocial, setIsLoadingSocial] = useState(false);
 
   const { data: marketData } = useQuery({
     queryKey: ['market-data'],
@@ -72,31 +79,32 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
   const competitors = Object.values(competitorsByBrand);
 
-  const searchMarketData = async (brand: string, searchType: 'market_analysis' | 'social_engagement' | 'news') => {
-    setIsSearching(true);
-    setSelectedBrand(brand);
+  const fetchAllSocialMedia = async () => {
+    setIsLoadingSocial(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('market-search', {
-        body: { brand, searchType }
+      const brandNames = competitors.map((c: any) => c.brand_name);
+      
+      const { data, error } = await supabase.functions.invoke('market-pulse-social', {
+        body: { brands: brandNames }
       });
 
       if (error) throw error;
 
-      setSearchResults(data);
+      setSocialData(data || []);
       toast({
-        title: "Search Complete",
-        description: `Found verified data for ${brand}`,
+        title: "Social Media Data Loaded",
+        description: `Found posts from ${brandNames.length} competitors`,
       });
     } catch (error: any) {
-      console.error('Search error:', error);
+      console.error('Social media fetch error:', error);
       toast({
-        title: "Search Failed",
-        description: error.message || "Failed to fetch market data",
+        title: "Failed to Load Social Data",
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     } finally {
-      setIsSearching(false);
+      setIsLoadingSocial(false);
     }
   };
 
@@ -135,12 +143,81 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
           </Card>
 
           {/* Tabs for different sections */}
-          <Tabs defaultValue="competitors" className="w-full">
+          <Tabs defaultValue="social" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="social">Social Media Posts</TabsTrigger>
               <TabsTrigger value="competitors">Competitor Analysis</TabsTrigger>
               <TabsTrigger value="trends">10-Year Trends</TabsTrigger>
-              <TabsTrigger value="social">Social Media Insights</TabsTrigger>
             </TabsList>
+
+            {/* Social Media Posts Tab */}
+            <TabsContent value="social" className="space-y-6 mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-muted-foreground">View competitor latest designs and social media posts</p>
+                <Button onClick={fetchAllSocialMedia} disabled={isLoadingSocial}>
+                  {isLoadingSocial ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Loading...</>
+                  ) : (
+                    <><Search className="h-4 w-4 mr-2" />Load Social Posts</>
+                  )}
+                </Button>
+              </div>
+
+              {socialData.length > 0 ? (
+                <div className="space-y-8">
+                  {socialData.map((brandData, idx) => (
+                    <div key={idx}>
+                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        {brandData.brand}
+                        <Badge variant="secondary">{brandData.posts.length} posts</Badge>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {brandData.posts.map((post, postIdx) => (
+                          <Card key={postIdx} className="overflow-hidden hover:shadow-lg transition-all cursor-pointer" onClick={() => window.open(post.postUrl, '_blank')}>
+                            <div className="aspect-square bg-muted relative">
+                              <img 
+                                src={post.imageUrl} 
+                                alt={post.description}
+                                className="w-full h-full object-cover"
+                              />
+                              <Badge className="absolute top-2 right-2">{post.postType}</Badge>
+                            </div>
+                            <div className="p-4 space-y-3">
+                              <p className="text-sm line-clamp-2">{post.description}</p>
+                              <Badge variant="outline">{post.designCategory}</Badge>
+                              
+                              <div className="grid grid-cols-3 gap-2 pt-2 border-t text-xs">
+                                <div className="text-center">
+                                  <div className="font-bold text-green-600">{post.engagement.likes.toLocaleString()}</div>
+                                  <div className="text-muted-foreground">Likes</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="font-bold text-blue-600">{post.engagement.comments.toLocaleString()}</div>
+                                  <div className="text-muted-foreground">Comments</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="font-bold text-amber-600">{post.engagement.shares.toLocaleString()}</div>
+                                  <div className="text-muted-foreground">Shares</div>
+                                </div>
+                              </div>
+
+                              <Button variant="outline" size="sm" className="w-full gap-2">
+                                View on Instagram <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <p className="text-muted-foreground mb-4">Click &quot;Load Social Posts&quot; to view competitor designs and latest collections</p>
+                  <Search className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                </Card>
+              )}
+            </TabsContent>
 
             {/* Competitor Analysis Tab */}
             <TabsContent value="competitors" className="space-y-6 mt-6">
@@ -256,201 +333,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   </Card>
                 );
               })}
-            </TabsContent>
-
-            {/* Social Media Insights Tab */}
-            <TabsContent value="social" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {competitors.map((competitor: any) => {
-                  const socialActivity = competitor.social_media_activity as any;
-                  const metrics = competitor.engagement_metrics as any;
-                  
-                  // Display information sources - informational only, no external links
-                  const informationSources = [
-                    { platform: 'Industry Presence', info: 'National & International Markets' },
-                    { platform: 'Brand Recognition', info: competitor.category },
-                    { platform: 'Market Position', info: 'Established Jeweler' },
-                  ];
-
-                  // Social media engagement data - display only, no clickable links
-                  const socialMediaData = [
-                    { 
-                      platform: 'Instagram Presence', 
-                      data: socialActivity?.instagram_followers || '1.2M followers',
-                      metric: 'High engagement on visual content'
-                    },
-                    { 
-                      platform: 'Facebook Marketing', 
-                      data: 'Active ad campaigns',
-                      metric: 'Regular product promotions'
-                    },
-                    { 
-                      platform: 'YouTube Content', 
-                      data: 'Product showcases',
-                      metric: 'Brand storytelling videos'
-                    },
-                  ];
-
-                  return (
-                    <Card key={competitor.id} className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between pb-4 border-b">
-                          <h3 className="text-xl font-bold">{competitor.brand_name}</h3>
-                          <Badge>{socialActivity?.platform || 'Instagram'}</Badge>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-purple-500/10 p-4 rounded-lg">
-                            <div className="text-sm text-muted-foreground">Followers</div>
-                            <div className="text-2xl font-bold text-purple-600">
-                              {socialActivity?.instagram_followers || '1.2M'}
-                            </div>
-                          </div>
-                          <div className="bg-accent/10 p-4 rounded-lg">
-                            <div className="text-sm text-muted-foreground">Engagement Rate</div>
-                            <div className="text-2xl font-bold text-accent">
-                              {socialActivity?.engagement_rate || '4.2%'}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-sm font-semibold mb-2">Recent Campaigns</div>
-                          <div className="flex flex-wrap gap-2">
-                            {(socialActivity?.recent_campaigns || ['Festive Collection', 'Bridal Heritage']).map((campaign: string, idx: number) => (
-                              <Badge key={idx} variant="secondary">{campaign}</Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-sm font-semibold mb-2">Activity</div>
-                          <div className="bg-muted/30 p-3 rounded-lg">
-                            <p className="text-sm">{socialActivity?.posts_today || 5} posts today</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Latest: {socialActivity?.latest_campaign || 'Diwali Collection 2025'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-                            Brand Information
-                            <Badge variant="outline" className="text-xs">Market Data</Badge>
-                          </div>
-                          <div className="space-y-2">
-                            {informationSources.map((source, idx) => (
-                              <div
-                                key={idx}
-                                className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
-                              >
-                                <span className="text-sm font-medium">{source.platform}</span>
-                                <span className="text-sm text-muted-foreground">{source.info}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-                            Verified Market Research
-                            <Badge variant="outline" className="text-xs">Web Search</Badge>
-                          </div>
-                          <div className="space-y-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => searchMarketData(competitor.brand_name, 'market_analysis')}
-                              disabled={isSearching}
-                            >
-                              {isSearching && selectedBrand === competitor.brand_name ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Search className="h-4 w-4 mr-2" />
-                              )}
-                              Market Analysis
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => searchMarketData(competitor.brand_name, 'social_engagement')}
-                              disabled={isSearching}
-                            >
-                              {isSearching && selectedBrand === competitor.brand_name ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Search className="h-4 w-4 mr-2" />
-                              )}
-                              Social Media Data
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => searchMarketData(competitor.brand_name, 'news')}
-                              disabled={isSearching}
-                            >
-                              {isSearching && selectedBrand === competitor.brand_name ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Search className="h-4 w-4 mr-2" />
-                              )}
-                              Latest News
-                            </Button>
-                          </div>
-
-                          {searchResults && selectedBrand === competitor.brand_name && (
-                            <div className="mt-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
-                              <h5 className="font-semibold text-sm mb-2">Search Results:</h5>
-                              <p className="text-sm text-muted-foreground mb-3">{searchResults.answer}</p>
-                              
-                              {searchResults.sources.length > 0 && (
-                                <div className="space-y-2">
-                                  <p className="text-xs font-semibold">Sources:</p>
-                                  {searchResults.sources.slice(0, 3).map((source, idx) => (
-                                    <div key={idx} className="text-xs p-2 bg-background rounded border">
-                                      <a 
-                                        href={source.url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="font-medium text-accent hover:underline flex items-center gap-1"
-                                      >
-                                        {source.title}
-                                        <ExternalLink className="h-3 w-3" />
-                                      </a>
-                                      <p className="text-muted-foreground mt-1 line-clamp-2">{source.content}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="pt-4 border-t">
-                          <div className="text-sm font-semibold mb-2">Engagement Breakdown</div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Likes</span>
-                              <span className="font-bold text-green-600">{metrics?.likes || 15000}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Comments</span>
-                              <span className="font-bold text-blue-600">{metrics?.comments || 500}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Shares</span>
-                              <span className="font-bold text-amber-600">{metrics?.shares || 200}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
             </TabsContent>
           </Tabs>
         </div>
