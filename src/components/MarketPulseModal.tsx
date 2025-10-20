@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, Area, AreaChart, BarChart, Bar } from 'recharts';
 import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -201,6 +201,48 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             {/* Market Positioning Tab */}
             <TabsContent value="positioning" className="space-y-6 mt-6">
               <p className="text-muted-foreground mb-4">Understand how competitors position themselves in the market</p>
+              
+              {/* Bar Chart showing relevance scores */}
+              <Card className="p-6">
+                <h3 className="text-xl font-bold mb-4">Competitor Relevance Scores</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={competitors.map((competitor: any) => {
+                      const analysis = competitorAnalysis[competitor.id];
+                      const relevanceScore = analysis?.relevanceScore || 85;
+                      return {
+                        name: competitor.brand_name,
+                        score: relevanceScore,
+                      };
+                    })}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      domain={[0, 100]}
+                      label={{ value: 'Relevance Score', angle: -90, position: 'insideLeft' }}
+                    />
+                    <ChartTooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))' 
+                      }}
+                    />
+                    <Bar 
+                      dataKey="score" 
+                      fill="hsl(var(--primary))" 
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {competitors.map((competitor: any) => {
