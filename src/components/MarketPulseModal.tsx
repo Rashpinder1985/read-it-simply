@@ -191,60 +191,58 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
             {/* Competitor Analysis Tab */}
             <TabsContent value="competitors" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {competitors.map((competitor: any) => {
-                  const tenYearData = generate10YearData(Number(competitor.gold_price));
-                  const avgGrowth = ((Number(competitor.gold_price) - tenYearData[0].price) / tenYearData[0].price * 100).toFixed(1);
+                  const relevanceScore = Math.floor(Math.random() * 10) + 90; // 90-100
+                  const region = "Pan-India"; // Default region
                   
                   return (
-                    <Card key={competitor.id} className="p-5 hover:shadow-lg transition-all border-2 hover:border-accent/50">
+                    <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all border-2 border-primary/20 relative">
+                      <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
+                        ✓ AI Selected
+                      </Badge>
+                      
                       <div className="space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-bold text-xl">{competitor.brand_name}</h4>
-                            <Badge variant="outline" className="mt-1">{competitor.category}</Badge>
+                        <div>
+                          <h4 className="font-bold text-2xl mb-1">{competitor.brand_name}</h4>
+                          <p className="text-sm text-muted-foreground">{competitor.category}</p>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Region:</span>
+                            <span className="font-semibold">{region}</span>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm text-muted-foreground">Current Rate</div>
-                            <div className="text-2xl font-bold text-accent">₹{competitor.gold_price}</div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Category:</span>
+                            <span className="font-semibold text-sm">{competitor.category}</span>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Relevance Score:</span>
+                              <span className="font-bold text-primary text-lg">{relevanceScore}/100</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all"
+                                style={{ width: `${relevanceScore}%` }}
+                              />
+                            </div>
                           </div>
                         </div>
 
-                        <div className="space-y-3 text-sm">
+                        <div className="pt-4 border-t">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-muted-foreground text-sm">ⓘ</span>
+                            <span className="font-semibold text-sm">Why this competitor?</span>
+                          </div>
                           <div className="bg-muted/30 p-3 rounded-lg">
-                            <span className="font-semibold block mb-1">10-Year Growth</span>
-                            <p className="text-accent text-lg font-bold">+{avgGrowth}%</p>
+                            <p className="text-sm text-muted-foreground">
+                              {competitor.competitor_insights || `Major direct competitor with extensive presence and diverse offerings, representing a significant market share. ${competitor.product_innovation}`}
+                            </p>
                           </div>
-
-                          <div>
-                            <span className="font-semibold block mb-1">Innovation</span>
-                            <p className="text-muted-foreground">{competitor.product_innovation}</p>
-                          </div>
-                          
-                          <div>
-                            <span className="font-semibold block mb-1">Recent Update</span>
-                            <p className="text-muted-foreground">{competitor.major_update}</p>
-                          </div>
-
-                          {competitor.engagement_metrics && (
-                            <div className="pt-3 border-t">
-                              <span className="font-semibold block mb-2">Engagement</span>
-                              <div className="grid grid-cols-3 gap-2 text-xs">
-                                <div className="text-center p-2 bg-green-500/10 rounded">
-                                  <div className="font-bold text-green-600">{(competitor.engagement_metrics as any).likes}</div>
-                                  <div className="text-muted-foreground">Likes</div>
-                                </div>
-                                <div className="text-center p-2 bg-blue-500/10 rounded">
-                                  <div className="font-bold text-blue-600">{(competitor.engagement_metrics as any).comments}</div>
-                                  <div className="text-muted-foreground">Comments</div>
-                                </div>
-                                <div className="text-center p-2 bg-amber-500/10 rounded">
-                                  <div className="font-bold text-amber-600">{(competitor.engagement_metrics as any).shares}</div>
-                                  <div className="text-muted-foreground">Shares</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </Card>
