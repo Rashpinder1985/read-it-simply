@@ -26,9 +26,11 @@ const CONTENT_TEMPLATES = [
   { value: "festive", label: "Festive Feel", category: "mood" },
 ];
 
+const NO_PERSONA_VALUE = "none";
+
 export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorModalProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [selectedPersona, setSelectedPersona] = useState("");
+  const [selectedPersona, setSelectedPersona] = useState(NO_PERSONA_VALUE);
   const [contentType, setContentType] = useState<"post" | "reel">("post");
   const [customInstructions, setCustomInstructions] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -71,7 +73,7 @@ export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorMo
         description: `AI-generated content for ${template?.label}${persona ? ` targeting ${persona.name}` : ''}`,
         type: contentType,
         status: 'pending_approval',
-        persona_id: selectedPersona || null,
+        persona_id: selectedPersona === NO_PERSONA_VALUE ? null : selectedPersona,
         user_id: user.id,
         hashtags: generateHashtags(template?.label || '', persona)
       });
@@ -85,7 +87,7 @@ export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorMo
 
       // Reset form
       setSelectedTemplate("");
-      setSelectedPersona("");
+      setSelectedPersona(NO_PERSONA_VALUE);
       setCustomInstructions("");
       onOpenChange(false);
     } catch (error) {
@@ -235,7 +237,7 @@ export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorMo
                 <SelectValue placeholder="Select a persona or leave blank for general content" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
-                <SelectItem value="">No specific persona</SelectItem>
+                <SelectItem value={NO_PERSONA_VALUE}>No specific persona</SelectItem>
                 {personas?.map(persona => (
                   <SelectItem key={persona.id} value={persona.id}>
                     {persona.name} - {persona.segment}
