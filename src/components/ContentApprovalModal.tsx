@@ -39,6 +39,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
   const [generationType, setGenerationType] = useState<Record<string, 'image' | 'text' | 'video'>>({});
   const [folderName, setFolderName] = useState<Record<string, string>>({});
   const [videoPrompts, setVideoPrompts] = useState<Record<string, string>>({});
+  const [aiGeneratedImages, setAiGeneratedImages] = useState<Record<string, string>>({});
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
@@ -348,38 +349,80 @@ Content snippet: ${item.content_text.substring(0, 300)}`;
       if (error) throw error;
 
       if (data.imageUrl) {
-        // Convert base64 to blob
-        const base64Response = await fetch(data.imageUrl);
-        const blob = await base64Response.blob();
-        
-        // Upload to storage with user-selected folder
-        const fileName = `${id}_${Date.now()}.png`;
-        const folder = folderName[id] || 'content-media';
-        const filePath = `${folder}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('business-media')
-          .upload(filePath, blob);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('business-media')
-          .getPublicUrl(filePath);
-
-        await updateContent.mutateAsync({ 
-          id, 
-          updates: { media_url: publicUrl }
-        });
+        // Store the base64 image temporarily for download option
+        const generatedImages = { ...aiGeneratedImages };
+        generatedImages[id] = data.imageUrl;
+        setAiGeneratedImages(generatedImages);
 
         toast({
           title: "Image Generated",
-          description: "AI-generated image has been attached to the content",
+          description: "You can now download or save the image to storage",
         });
       }
     } finally {
       setGeneratingImage(null);
     }
+  };
+
+  const handleSaveImageToStorage = async (id: string) => {
+    try {
+      const imageUrl = aiGeneratedImages[id];
+      if (!imageUrl) return;
+
+      // Convert base64 to blob
+      const base64Response = await fetch(imageUrl);
+      const blob = await base64Response.blob();
+      
+      // Upload to storage with user-selected folder
+      const fileName = `${id}_${Date.now()}.png`;
+      const folder = folderName[id] || 'content-media';
+      const filePath = `${folder}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('business-media')
+        .upload(filePath, blob);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('business-media')
+        .getPublicUrl(filePath);
+
+      await updateContent.mutateAsync({ 
+        id, 
+        updates: { media_url: publicUrl }
+      });
+
+      toast({
+        title: "Image Saved",
+        description: "Image has been saved to storage and attached to content",
+      });
+    } catch (error) {
+      console.error('Error saving image:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save image to storage",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadImage = (id: string) => {
+    const imageUrl = aiGeneratedImages[id];
+    if (!imageUrl) return;
+
+    // Create download link
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `content_${id}_${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Image Downloaded",
+      description: "Image has been downloaded to your device",
+    });
   };
 
   const handleReject = (id: string) => {
@@ -593,6 +636,38 @@ Content snippet: ${item.content_text.substring(0, 300)}`;
                               )}
                             </Button>
                           </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {aiGeneratedImages[item.id] && !item.media_url && (
+                      <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-semibold">Generated Image</Label>
+                        </div>
+                        <img 
+                          src={aiGeneratedImages[item.id]} 
+                          alt="AI Generated" 
+                          className="rounded-lg max-h-64 w-full object-cover border"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadImage(item.id)}
+                            className="flex-1"
+                          >
+                            <ImageIcon className="h-4 w-4 mr-1" />
+                            Download Image
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveImageToStorage(item.id)}
+                            className="flex-1"
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            Save to Storage
+                          </Button>
                         </div>
                       </div>
                     )}
