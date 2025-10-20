@@ -243,7 +243,18 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                           </div>
                           
                           <div>
-                            <span className="font-semibold block mb-1 text-sm">Recent Update</span>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-sm">Recent Update</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' ' + competitor.major_update)}`, '_blank')}
+                                className="h-6 px-2 text-xs gap-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Verify
+                              </Button>
+                            </div>
                             <p className="text-sm text-muted-foreground">{competitor.major_update}</p>
                           </div>
                         </div>
