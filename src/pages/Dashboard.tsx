@@ -5,6 +5,7 @@ import { MarketPulseModal } from "@/components/MarketPulseModal";
 import { PersonasModal } from "@/components/PersonasModal";
 import { ContentApprovalModal } from "@/components/ContentApprovalModal";
 import { ContentSchedulingModal } from "@/components/ContentSchedulingModal";
+import { ContentGeneratorModal } from "@/components/ContentGeneratorModal";
 import { ContentPipeline } from "@/components/ContentPipeline";
 import { Button } from "@/components/ui/button";
 import { 
@@ -34,6 +35,7 @@ const Dashboard = () => {
   const [personasOpen, setPersonasOpen] = useState(false);
   const [contentApprovalOpen, setContentApprovalOpen] = useState(false);
   const [contentSchedulingOpen, setContentSchedulingOpen] = useState(false);
+  const [contentGeneratorOpen, setContentGeneratorOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
 
@@ -118,6 +120,7 @@ const Dashboard = () => {
       <PersonasModal open={personasOpen} onOpenChange={setPersonasOpen} />
       <ContentApprovalModal open={contentApprovalOpen} onOpenChange={setContentApprovalOpen} />
       <ContentSchedulingModal open={contentSchedulingOpen} onOpenChange={setContentSchedulingOpen} />
+      <ContentGeneratorModal open={contentGeneratorOpen} onOpenChange={setContentGeneratorOpen} />
       
       <main className="container mx-auto px-6 py-8">
         {/* Management Buttons */}
@@ -225,11 +228,11 @@ const Dashboard = () => {
               />
             </div>
 
-            <div onClick={() => setContentApprovalOpen(true)} className="cursor-pointer">
+            <div onClick={() => setContentGeneratorOpen(true)} className="cursor-pointer">
               <AIEmployee
                 name="Content Generation"
                 role="Creative Content Strategist"
-                description="Generates Instagram posts and reels tailored to each persona. Click to review, approve, or reject generated content before scheduling."
+                description="Generates Instagram posts and reels tailored to each persona. Click to create new content using templates for festivals, promotions, and more."
                 status="active"
                 icon={<Brain className="h-6 w-6" />}
                 metrics={[
