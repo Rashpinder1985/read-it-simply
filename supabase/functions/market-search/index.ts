@@ -16,69 +16,84 @@ serve(async (req) => {
   }
 
   try {
-    const tavilyApiKey = Deno.env.get("TAVILY_API_KEY");
-    if (!tavilyApiKey) {
-      throw new Error("TAVILY_API_KEY is not configured");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableApiKey) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const { brand, searchType }: SearchRequest = await req.json();
 
-    // Construct search query based on type
-    let searchQuery = "";
+    // Construct search query and instructions based on type
+    let systemPrompt = "";
+    let userQuery = "";
+    
     switch (searchType) {
       case 'market_analysis':
-        searchQuery = `${brand} jewelry market share analysis competitive position india`;
+        systemPrompt = "You are a market research analyst specializing in the jewelry industry. Provide comprehensive, data-driven analysis based on publicly available information.";
+        userQuery = `Analyze ${brand}'s market position in the Indian jewelry industry. Include: 1) Market share estimates, 2) Competitive positioning vs Tanishq/Kalyan/PC Jeweller, 3) Key strengths and differentiators, 4) Recent expansion or strategic moves, 5) Target customer segments. Be specific and cite any known data points.`;
         break;
       case 'social_engagement':
-        searchQuery = `${brand} jewelry social media engagement instagram facebook campaign`;
+        systemPrompt = "You are a social media analytics expert for the jewelry retail industry. Focus on digital engagement metrics and campaign performance.";
+        userQuery = `Analyze ${brand}'s social media presence and engagement. Include: 1) Estimated Instagram/Facebook follower base, 2) Recent successful campaigns or posts, 3) Content strategy (product showcases, bridal, festivals), 4) Engagement patterns and customer interaction style, 5) Influencer partnerships if any. Provide realistic estimates based on brand size.`;
         break;
       case 'news':
-        searchQuery = `${brand} jewelry latest news updates 2025`;
+        systemPrompt = "You are a business news analyst covering the jewelry retail sector in India. Focus on recent developments and newsworthy events.";
+        userQuery = `What are the latest developments, news, or updates about ${brand} jewelry company in 2024-2025? Include: 1) New store openings or expansions, 2) Product launches or collections, 3) Celebrity endorsements or campaigns, 4) Business performance or awards, 5) Any strategic partnerships or initiatives.`;
         break;
       default:
-        searchQuery = `${brand} jewelry company information`;
+        systemPrompt = "You are a knowledgeable assistant about the Indian jewelry retail industry.";
+        userQuery = `Provide key information about ${brand} jewelry company.`;
     }
 
-    console.log('Searching for:', searchQuery);
+    console.log('AI Search Query:', userQuery);
 
-    // Call Tavily API
-    const response = await fetch('https://api.tavily.com/search', {
+    // Call Lovable AI Gateway
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        api_key: tavilyApiKey,
-        query: searchQuery,
-        search_depth: "advanced",
-        include_answer: true,
-        include_raw_content: false,
-        max_results: 5,
-        include_domains: [],
-        exclude_domains: []
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userQuery }
+        ],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Tavily API error:', response.status, errorText);
-      throw new Error(`Tavily API error: ${response.status}`);
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again in a moment.");
+      }
+      if (response.status === 402) {
+        throw new Error("AI credits depleted. Please add credits to continue.");
+      }
+      
+      throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
+    const aiResponse = data.choices[0].message.content;
 
-    // Extract and format the results
+    console.log('AI Response received');
+
+    // Format the response
     const formattedResults = {
-      answer: data.answer || "No summary available",
-      sources: data.results?.map((result: any) => ({
-        title: result.title,
-        url: result.url,
-        content: result.content,
-        score: result.score
-      })) || []
+      answer: aiResponse,
+      sources: [
+        {
+          title: `${brand} ${searchType === 'market_analysis' ? 'Market Analysis' : searchType === 'social_engagement' ? 'Social Media Insights' : 'Latest News'}`,
+          url: '#',
+          content: 'AI-generated analysis based on publicly available information',
+          score: 1.0
+        }
+      ]
     };
-
-    console.log('Search results:', formattedResults);
 
     return new Response(
       JSON.stringify(formattedResults),
