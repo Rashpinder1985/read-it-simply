@@ -181,10 +181,49 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
     }
   };
 
-  const handleGenerateImage = async (id: string, contentText: string, title: string) => {
+  const handleGenerateImage = async (id: string, contentText: string, title: string, item: any) => {
     setGeneratingImage(id);
     try {
-      const prompt = `Create a beautiful, professional jewelry marketing image for Instagram. Context: ${title}. ${contentText.substring(0, 200)}. Style: Elegant, luxury, modern, high-quality product photography with beautiful lighting and composition.`;
+      // Build a comprehensive prompt from all content details
+      const contentType = item.type === 'reel' ? 'video thumbnail' : 'Instagram post';
+      const personaContext = item.personas ? `targeted at ${item.personas.name} (${item.personas.segment})` : '';
+      const hashtagsContext = item.hashtags?.slice(0, 5).join(', ') || '';
+      
+      // Extract key themes from content
+      let visualTheme = '';
+      const lowerContent = contentText.toLowerCase();
+      if (lowerContent.includes('diwali') || lowerContent.includes('festival of lights')) {
+        visualTheme = 'Diwali themed with diyas, warm golden lighting, festive atmosphere';
+      } else if (lowerContent.includes('wedding') || lowerContent.includes('bridal')) {
+        visualTheme = 'elegant bridal jewelry, wedding setting, romantic and luxurious';
+      } else if (lowerContent.includes('gold')) {
+        visualTheme = 'premium gold jewelry with warm lighting and elegant presentation';
+      } else if (lowerContent.includes('diamond')) {
+        visualTheme = 'sparkling diamond jewelry with brilliant lighting';
+      } else {
+        visualTheme = 'high-end jewelry with professional studio lighting';
+      }
+      
+      const prompt = `Create a professional, high-quality ${contentType} image for a jewelry marketing campaign.
+
+Title: ${title}
+Context: ${item.description || ''}
+${personaContext ? `Target Audience: ${personaContext}` : ''}
+${hashtagsContext ? `Themes: ${hashtagsContext}` : ''}
+
+Visual Style: ${visualTheme}
+
+Requirements:
+- Professional jewelry photography style
+- Clean, elegant composition
+- Suitable for Instagram ${item.type === 'reel' ? '(9:16 vertical format)' : '(1:1 square format)'}
+- Luxury brand aesthetic
+- Eye-catching and scroll-stopping
+- No text overlays
+- High resolution, sharp focus on jewelry
+${item.type === 'reel' ? '- Dynamic, engaging composition for video thumbnail' : '- Static, elegant product showcase'}
+
+Content snippet: ${contentText.substring(0, 300)}`;
 
       const { data, error } = await supabase.functions.invoke('generate-content-image', {
         body: { prompt }
@@ -392,7 +431,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleGenerateImage(item.id, item.content_text, item.title)}
+                          onClick={() => handleGenerateImage(item.id, item.content_text, item.title, item)}
                           disabled={generatingImage === item.id}
                         >
                           {generatingImage === item.id ? (
