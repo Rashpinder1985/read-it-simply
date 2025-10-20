@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, Area, AreaChart, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, Area, AreaChart, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -202,44 +202,65 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             <TabsContent value="positioning" className="space-y-6 mt-6">
               <p className="text-muted-foreground mb-4">Strategic market intelligence and competitive positioning analysis</p>
               
-              {/* 1. Regional Market Saturation Analysis */}
+              {/* 1. Regional Market Saturation Analysis - PIE CHART */}
               <Card className="p-6">
                 <h3 className="text-xl font-bold mb-2">Regional Market Saturation Analysis</h3>
-                <p className="text-sm text-muted-foreground mb-4">Identifies less saturated markets for expansion opportunities</p>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={(() => {
-                      const regionCounts: Record<string, number> = {};
-                      competitors.forEach((competitor: any) => {
-                        const analysis = competitorAnalysis[competitor.id];
-                        const region = analysis?.region || "Pan-India";
-                        regionCounts[region] = (regionCounts[region] || 0) + 1;
-                      });
-                      return Object.entries(regionCounts).map(([region, count]) => ({
-                        region,
-                        competitors: count,
-                      }));
-                    })()}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="region" />
-                    <YAxis label={{ value: 'Number of Competitors', angle: -90, position: 'insideLeft' }} />
+                <p className="text-sm text-muted-foreground mb-4">Market share distribution by competitor presence across regions</p>
+                <ResponsiveContainer width="100%" height={350}>
+                  <PieChart>
+                    <Pie
+                      data={(() => {
+                        const regionCounts: Record<string, number> = {};
+                        competitors.forEach((competitor: any) => {
+                          const analysis = competitorAnalysis[competitor.id];
+                          const region = analysis?.region || "Pan-India";
+                          regionCounts[region] = (regionCounts[region] || 0) + 1;
+                        });
+                        return Object.entries(regionCounts).map(([region, count]) => ({
+                          region,
+                          competitors: count,
+                          percentage: Math.round((count / competitors.length) * 100)
+                        }));
+                      })()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({ region, percentage }) => `${region}: ${percentage}%`}
+                      outerRadius={120}
+                      fill="#8884d8"
+                      dataKey="competitors"
+                    >
+                      {(() => {
+                        const regionCounts: Record<string, number> = {};
+                        competitors.forEach((competitor: any) => {
+                          const analysis = competitorAnalysis[competitor.id];
+                          const region = analysis?.region || "Pan-India";
+                          regionCounts[region] = (regionCounts[region] || 0) + 1;
+                        });
+                        const colors = ['#8b5cf6', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#ec4899'];
+                        return Object.keys(regionCounts).map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                        ));
+                      })()}
+                    </Pie>
                     <ChartTooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--background))', 
                         border: '1px solid hsl(var(--border))' 
                       }}
                     />
-                    <Bar dataKey="competitors" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                  </BarChart>
+                  </PieChart>
                 </ResponsiveContainer>
               </Card>
 
-              {/* 2. Category Competition Intensity */}
+              {/* 2. Category Competition Intensity - COLOR CODED */}
               <Card className="p-6">
                 <h3 className="text-xl font-bold mb-2">Category Competition Intensity</h3>
-                <p className="text-sm text-muted-foreground mb-4">Reveals overcrowded vs underserved segments</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  <span className="inline-block w-3 h-3 bg-red-500 mr-1 rounded"></span>Overcrowded (5+ competitors) | 
+                  <span className="inline-block w-3 h-3 bg-yellow-500 mx-1 rounded"></span>Moderate (3-4) | 
+                  <span className="inline-block w-3 h-3 bg-green-500 mx-1 rounded"></span>Opportunity (0-2)
+                </p>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={(() => {
@@ -265,41 +286,60 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         border: '1px solid hsl(var(--border))' 
                       }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--accent))" radius={[0, 8, 8, 0]} />
+                    <Bar dataKey="count">
+                      {(() => {
+                        const categoryCounts: Record<string, number> = {};
+                        competitors.forEach((competitor: any) => {
+                          const analysis = competitorAnalysis[competitor.id];
+                          const category = analysis?.category || competitor.category || "Jewellery";
+                          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                        });
+                        return Object.entries(categoryCounts)
+                          .map(([category, count]) => ({ category, count }))
+                          .sort((a, b) => b.count - a.count)
+                          .map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.count >= 5 ? '#ef4444' : entry.count >= 3 ? '#f59e0b' : '#10b981'} 
+                            />
+                          ));
+                      })()}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
 
-              {/* 3. Regional Competitive Strength Index */}
+              {/* 3. Top Competitors by AI Relevance Score */}
               <Card className="p-6">
-                <h3 className="text-xl font-bold mb-2">Regional Competitive Strength Index</h3>
-                <p className="text-sm text-muted-foreground mb-4">Shows where competition is strongest/weakest</p>
-                <ResponsiveContainer width="100%" height={300}>
+                <h3 className="text-xl font-bold mb-2">Top Competitors by Market Strength</h3>
+                <p className="text-sm text-muted-foreground mb-4">Ranked by AI relevance score - higher scores indicate stronger competitive threat</p>
+                <ResponsiveContainer width="100%" height={350}>
                   <BarChart
-                    data={(() => {
-                      const regionStrength: Record<string, number> = {};
-                      competitors.forEach((competitor: any) => {
+                    data={competitors
+                      .map((competitor: any) => {
                         const analysis = competitorAnalysis[competitor.id];
-                        const region = analysis?.region || "Pan-India";
-                        const score = analysis?.relevanceScore || 85;
-                        regionStrength[region] = (regionStrength[region] || 0) + score;
-                      });
-                      return Object.entries(regionStrength)
-                        .map(([region, totalScore]) => ({ region, strength: Math.round(totalScore) }))
-                        .sort((a, b) => b.strength - a.strength);
-                    })()}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                        return {
+                          name: competitor.brand_name?.length > 18 
+                            ? competitor.brand_name.substring(0, 16) + '...' 
+                            : competitor.brand_name,
+                          score: analysis?.relevanceScore || competitor.relevance_score || 75
+                        };
+                      })
+                      .sort((a, b) => b.score - a.score)
+                      .slice(0, 10)}
+                    layout="vertical"
+                    margin={{ top: 20, right: 30, left: 150, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="region" />
-                    <YAxis label={{ value: 'Total Strength Score', angle: -90, position: 'insideLeft' }} />
+                    <XAxis type="number" domain={[0, 100]} />
+                    <YAxis type="category" dataKey="name" width={140} />
                     <ChartTooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--background))', 
                         border: '1px solid hsl(var(--border))' 
                       }}
                     />
-                    <Bar dataKey="strength" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="score" fill="#10b981" radius={[0, 8, 8, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
@@ -367,21 +407,35 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
               {/* 5. Innovation Activity Tracker */}
               <Card className="p-6">
                 <h3 className="text-xl font-bold mb-2">Innovation Activity Tracker</h3>
-                <p className="text-sm text-muted-foreground mb-4">Identifies active vs dormant competitors</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  <span className="inline-block w-3 h-3 bg-green-500 mr-1 rounded"></span>Active (innovation detected) | 
+                  <span className="inline-block w-3 h-3 bg-gray-400 mx-1 rounded"></span>Dormant (no recent innovation)
+                </p>
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart
                     data={competitors
                       .map((competitor: any) => {
                         const analysis = competitorAnalysis[competitor.id];
-                        const hasInnovation = competitor.product_innovation ? 1 : 0;
-                        const hasUpdate = competitor.major_update ? 1 : 0;
-                        const activityScore = (hasInnovation + hasUpdate) * 50;
+                        const insights = (competitor.competitor_insights || '').toLowerCase();
+                        const innovation = (competitor.product_innovation || '').toLowerCase();
+                        const update = (competitor.major_update || '').toLowerCase();
+                        const combined = insights + ' ' + innovation + ' ' + update;
+                        
+                        let score = 0;
+                        if (combined.includes('innovation') || combined.includes('new') || combined.includes('launch')) score += 40;
+                        if (combined.includes('technology') || combined.includes('digital')) score += 30;
+                        if (combined.includes('2025') || combined.includes('2024')) score += 20;
+                        if (combined.includes('expanding') || combined.includes('growth')) score += 10;
+                        
                         return {
-                          name: competitor.brand_name,
-                          activity: activityScore,
+                          name: competitor.brand_name?.length > 15 
+                            ? competitor.brand_name.substring(0, 13) + '...' 
+                            : competitor.brand_name,
+                          score,
                         };
                       })
-                      .sort((a, b) => b.activity - a.activity)}
+                      .sort((a, b) => b.score - a.score)
+                      .slice(0, 10)}
                     margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -394,7 +448,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                     />
                     <YAxis 
                       domain={[0, 100]}
-                      label={{ value: 'Innovation Activity Score', angle: -90, position: 'insideLeft' }} 
+                      label={{ value: 'Innovation Score', angle: -90, position: 'insideLeft' }} 
                     />
                     <ChartTooltip 
                       contentStyle={{ 
@@ -402,7 +456,31 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         border: '1px solid hsl(var(--border))' 
                       }}
                     />
-                    <Bar dataKey="activity" fill="hsl(var(--accent))" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="score">
+                      {competitors
+                        .map((competitor: any) => {
+                          const insights = (competitor.competitor_insights || '').toLowerCase();
+                          const innovation = (competitor.product_innovation || '').toLowerCase();
+                          const update = (competitor.major_update || '').toLowerCase();
+                          const combined = insights + ' ' + innovation + ' ' + update;
+                          
+                          let score = 0;
+                          if (combined.includes('innovation') || combined.includes('new') || combined.includes('launch')) score += 40;
+                          if (combined.includes('technology') || combined.includes('digital')) score += 30;
+                          if (combined.includes('2025') || combined.includes('2024')) score += 20;
+                          if (combined.includes('expanding') || combined.includes('growth')) score += 10;
+                          
+                          return score;
+                        })
+                        .sort((a, b) => b - a)
+                        .slice(0, 10)
+                        .map((score, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={score > 0 ? '#10b981' : '#9ca3af'} 
+                          />
+                        ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
