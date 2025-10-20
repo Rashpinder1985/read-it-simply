@@ -248,11 +248,11 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' ' + competitor.major_update)}`, '_blank')}
+                                onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
                                 className="h-6 px-2 text-xs gap-1"
                               >
                                 <ExternalLink className="h-3 w-3" />
-                                Verify
+                                Verify on Instagram
                               </Button>
                             </div>
                             <p className="text-sm text-muted-foreground">{competitor.major_update}</p>
