@@ -124,6 +124,7 @@ export type Database = {
           engagement_metrics: Json | null
           gold_price: number | null
           id: string
+          instagram_handle: string | null
           major_update: string | null
           market_analysis: Json | null
           product_innovation: string | null
@@ -142,6 +143,7 @@ export type Database = {
           engagement_metrics?: Json | null
           gold_price?: number | null
           id?: string
+          instagram_handle?: string | null
           major_update?: string | null
           market_analysis?: Json | null
           product_innovation?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           engagement_metrics?: Json | null
           gold_price?: number | null
           id?: string
+          instagram_handle?: string | null
           major_update?: string | null
           market_analysis?: Json | null
           product_innovation?: string | null

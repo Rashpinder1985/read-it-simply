@@ -119,10 +119,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
     });
   };
 
-  const getCompetitorInstagramHandle = (brandName: string) => {
-    return brandName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
@@ -201,7 +197,11 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
               {socialData.length > 0 ? (
                 <div className="space-y-8">
-                  {socialData.map((brandData, idx) => (
+                  {socialData.map((brandData, idx) => {
+                    const competitor = competitors.find((c: any) => c.brand_name === brandData.brand);
+                    const instagramHandle = competitor?.instagram_handle || brandData.brand.toLowerCase().replace(/\s+/g, '');
+                    
+                    return (
                     <div key={idx}>
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold flex items-center gap-2">
@@ -211,11 +211,11 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(`https://instagram.com/${getCompetitorInstagramHandle(brandData.brand)}`, '_blank')}
+                          onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
                           className="gap-2"
                         >
                           <ExternalLink className="h-4 w-4" />
-                          Follow @{getCompetitorInstagramHandle(brandData.brand)}
+                          Follow @{instagramHandle}
                         </Button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -256,7 +256,8 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         ))}
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               ) : (
                 <Card className="p-12 text-center">

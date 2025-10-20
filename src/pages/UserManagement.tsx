@@ -29,9 +29,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, UserPlus } from "lucide-react";
+import { Loader2, Plus, Trash2, UserPlus, Instagram } from "lucide-react";
 import { z } from "zod";
 import { Header } from "@/components/Header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const userSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -54,11 +56,19 @@ type UserWithRole = {
   created_at: string;
 };
 
+type Competitor = {
+  id: string;
+  brand_name: string;
+  instagram_handle: string | null;
+  category: string | null;
+};
+
 export default function UserManagement() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -94,8 +104,23 @@ export default function UserManagement() {
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
+      fetchCompetitors();
     }
   }, [isAdmin]);
+
+  const fetchCompetitors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("market_data")
+        .select("id, brand_name, instagram_handle, category")
+        .order("brand_name");
+
+      if (error) throw error;
+      setCompetitors(data || []);
+    } catch (error) {
+      console.error("Error fetching competitors:", error);
+    }
+  };
 
   const checkAdminStatus = async () => {
     try {
@@ -305,6 +330,48 @@ export default function UserManagement() {
             Create and manage user accounts and roles
           </p>
         </div>
+
+        {/* Competitor Follow Section */}
+        {competitors.length > 0 && (
+          <Card className="p-6 mb-8 bg-gradient-to-r from-primary/5 to-accent/5">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
+                <Instagram className="h-6 w-6" />
+                Competitor Instagram Handles
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                Follow competitors to stay updated with their latest designs and collections
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {competitors.map((competitor) => {
+                const instagramHandle = competitor.instagram_handle || competitor.brand_name.toLowerCase().replace(/\s+/g, '');
+                return (
+                  <Card key={competitor.id} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{competitor.brand_name}</h3>
+                        {competitor.category && (
+                          <Badge variant="outline" className="mt-1">{competitor.category}</Badge>
+                        )}
+                      </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
+                        className="gap-2"
+                      >
+                        <Instagram className="h-4 w-4" />
+                        Follow
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">@{instagramHandle}</p>
+                  </Card>
+                );
+              })}
+            </div>
+          </Card>
+        )}
 
         <div className="flex justify-end mb-6">
           <Button onClick={() => setCreateDialogOpen(true)} className="gap-2" size="lg">
