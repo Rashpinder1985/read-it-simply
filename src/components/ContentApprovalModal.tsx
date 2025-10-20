@@ -37,6 +37,7 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState<string | null>(null);
   const [generationType, setGenerationType] = useState<Record<string, 'image' | 'text' | 'video'>>({});
+  const [folderName, setFolderName] = useState<Record<string, string>>({});
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
@@ -302,9 +303,10 @@ Content snippet: ${item.content_text.substring(0, 300)}`;
         const base64Response = await fetch(data.imageUrl);
         const blob = await base64Response.blob();
         
-        // Upload to storage
+        // Upload to storage with user-selected folder
         const fileName = `${id}_${Date.now()}.png`;
-        const filePath = `content-media/${fileName}`;
+        const folder = folderName[id] || 'content-media';
+        const filePath = `${folder}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('business-media')
@@ -458,25 +460,27 @@ Content snippet: ${item.content_text.substring(0, 300)}`;
                 {item.status === 'pending_approval' && (
                   <div className="space-y-3">
                     {!item.media_url && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => document.getElementById(`file-${item.id}`)?.click()}
-                          disabled={uploadingMedia === item.id}
-                        >
-                          {uploadingMedia === item.id ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-1" />
-                              Upload Media
-                            </>
-                          )}
-                        </Button>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => document.getElementById(`file-${item.id}`)?.click()}
+                            disabled={uploadingMedia === item.id}
+                          >
+                            {uploadingMedia === item.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-1" />
+                                Upload Media
+                              </>
+                            )}
+                          </Button>
+                        </div>
                         <input
                           id={`file-${item.id}`}
                           type="file"
@@ -487,46 +491,59 @@ Content snippet: ${item.content_text.substring(0, 300)}`;
                             if (file) handleMediaUpload(item.id, file);
                           }}
                         />
-                        <div className="flex gap-1">
-                          <Select 
-                            value={generationType[item.id] || (item.type === 'post' ? 'image' : 'text')} 
-                            onValueChange={(value: 'image' | 'text' | 'video') => setGenerationType({...generationType, [item.id]: value})}
-                          >
-                            <SelectTrigger className="w-[110px] h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background z-50">
-                              {item.type === 'post' ? (
+                        <div className="space-y-2">
+                          <div>
+                            <Label htmlFor={`folder-${item.id}`} className="text-xs">Save to Folder</Label>
+                            <Input
+                              id={`folder-${item.id}`}
+                              placeholder="content-media"
+                              value={folderName[item.id] || ''}
+                              onChange={(e) => setFolderName({ ...folderName, [item.id]: e.target.value })}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="flex gap-1">
+                            <Select 
+                              value={generationType[item.id] || (item.type === 'post' ? 'image' : 'text')} 
+                              onValueChange={(value: 'image' | 'text' | 'video') => setGenerationType({...generationType, [item.id]: value})}
+                            >
+                              <SelectTrigger className="w-[110px] h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background z-50">
+                                {item.type === 'post' ? (
+                                  <>
+                                    <SelectItem value="image">Image</SelectItem>
+                                    <SelectItem value="text">Text</SelectItem>
+                                  </>
+                                ) : (
+                                  <>
+                                    <SelectItem value="text">Text</SelectItem>
+                                    <SelectItem value="video">Video</SelectItem>
+                                  </>
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAIGenerate(item.id, item, generationType[item.id] || (item.type === 'post' ? 'image' : 'text'))}
+                              disabled={generatingImage === item.id}
+                              className="flex-1"
+                            >
+                              {generatingImage === item.id ? (
                                 <>
-                                  <SelectItem value="image">Image</SelectItem>
-                                  <SelectItem value="text">Text</SelectItem>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
+                                  Generating...
                                 </>
                               ) : (
                                 <>
-                                  <SelectItem value="text">Text</SelectItem>
-                                  <SelectItem value="video">Video</SelectItem>
+                                  <Sparkles className="h-4 w-4 mr-1" />
+                                  AI Generate
                                 </>
                               )}
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAIGenerate(item.id, item, generationType[item.id] || (item.type === 'post' ? 'image' : 'text'))}
-                            disabled={generatingImage === item.id}
-                          >
-                            {generatingImage === item.id ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
-                                Generating...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-4 w-4 mr-1" />
-                                AI Generate
-                              </>
-                            )}
-                          </Button>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
