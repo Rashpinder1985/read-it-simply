@@ -220,12 +220,12 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   const socialActivity = competitor.social_media_activity as any;
                   const metrics = competitor.engagement_metrics as any;
                   
-                  // Public media and official sources
+                  // Public media and official sources - all safe, non-blocked links
                   const publicLinks = [
-                    { platform: 'Official Website', url: `https://www.${competitor.brand_name.toLowerCase().replace(/\s/g, '')}.com`, icon: 'ExternalLink' },
-                    { platform: 'News Coverage', url: `https://www.google.com/search?q=${competitor.brand_name}+jewelry+news&tbm=nws`, icon: 'ExternalLink' },
-                    { platform: 'Industry Reports', url: `https://www.google.com/search?q=${competitor.brand_name}+market+analysis`, icon: 'ExternalLink' },
-                    { platform: 'Customer Reviews', url: `https://www.google.com/search?q=${competitor.brand_name}+reviews`, icon: 'ExternalLink' },
+                    { platform: 'Google Search', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' jewelry')}`, icon: 'ExternalLink' },
+                    { platform: 'Latest News', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' jewelry news')}&tbm=nws`, icon: 'ExternalLink' },
+                    { platform: 'Market Analysis', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' market share analysis')}`, icon: 'ExternalLink' },
+                    { platform: 'Customer Reviews', url: `https://www.google.com/search?q=${encodeURIComponent(competitor.brand_name + ' customer reviews jewelry')}`, icon: 'ExternalLink' },
                   ];
 
                   return (
