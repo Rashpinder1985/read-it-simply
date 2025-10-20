@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_details: {
+        Row: {
+          branches: Json | null
+          company_name: string
+          created_at: string | null
+          hq_address: string | null
+          id: string
+          primary_segments: Json | null
+          social_media_links: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          branches?: Json | null
+          company_name: string
+          created_at?: string | null
+          hq_address?: string | null
+          id?: string
+          primary_segments?: Json | null
+          social_media_links?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          branches?: Json | null
+          company_name?: string
+          created_at?: string | null
+          hq_address?: string | null
+          id?: string
+          primary_segments?: Json | null
+          social_media_links?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       content: {
         Row: {
           approved_at: string | null
