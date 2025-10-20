@@ -3,11 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { Sparkles, Calendar, Target } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ContentGeneratorModalProps {
   open: boolean;
@@ -33,6 +37,7 @@ export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorMo
   const [selectedPersona, setSelectedPersona] = useState(NO_PERSONA_VALUE);
   const [contentType, setContentType] = useState<"post" | "reel">("post");
   const [customInstructions, setCustomInstructions] = useState("");
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: personas } = useQuery({
@@ -75,7 +80,8 @@ export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorMo
         status: 'pending_approval',
         persona_id: selectedPersona === NO_PERSONA_VALUE ? null : selectedPersona,
         user_id: user.id,
-        hashtags: generateHashtags(template?.label || '', persona)
+        hashtags: generateHashtags(template?.label || '', persona),
+        scheduled_for: scheduledDate ? scheduledDate.toISOString() : null
       });
 
       if (error) throw error;
@@ -89,6 +95,7 @@ export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorMo
       setSelectedTemplate("");
       setSelectedPersona(NO_PERSONA_VALUE);
       setCustomInstructions("");
+      setScheduledDate(undefined);
       onOpenChange(false);
     } catch (error) {
       console.error('Error generating content:', error);
@@ -256,6 +263,38 @@ export const ContentGeneratorModal = ({ open, onOpenChange }: ContentGeneratorMo
               onChange={(e) => setCustomInstructions(e.target.value)}
               rows={4}
             />
+          </div>
+
+          {/* Schedule Date */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Schedule For (Optional)
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !scheduledDate && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {scheduledDate ? format(scheduledDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-background z-50" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={scheduledDate}
+                  onSelect={setScheduledDate}
+                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Action Buttons */}
