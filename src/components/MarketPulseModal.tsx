@@ -195,6 +195,9 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                 {competitors.map((competitor: any) => {
                   const relevanceScore = Math.floor(Math.random() * 10) + 90; // 90-100
                   const region = "Pan-India"; // Default region
+                  const instagramHandle = competitor?.instagram_handle || competitor.brand_name.toLowerCase().replace(/\s+/g, '');
+                  const socialMediaLinks = competitor?.social_media_links || {};
+                  const website = socialMediaLinks?.website || `https://www.${competitor.brand_name.toLowerCase().replace(/\s+/g, '')}.com`;
                   
                   return (
                     <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all border-2 border-primary/20 relative">
@@ -233,6 +236,46 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                           </div>
                         </div>
 
+                        <div className="pt-4 border-t space-y-3">
+                          <div>
+                            <span className="font-semibold block mb-1 text-sm">Latest Innovation</span>
+                            <p className="text-sm text-muted-foreground">{competitor.product_innovation}</p>
+                          </div>
+                          
+                          <div>
+                            <span className="font-semibold block mb-1 text-sm">Recent Update</span>
+                            <p className="text-sm text-muted-foreground">{competitor.major_update}</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[80px]">Instagram:</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
+                              className="gap-2 flex-1"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              @{instagramHandle}
+                            </Button>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[80px]">Website:</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(website, '_blank')}
+                              className="gap-2 flex-1"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              Visit Website
+                            </Button>
+                          </div>
+                        </div>
+
                         <div className="pt-4 border-t">
                           <div className="flex items-start gap-2 mb-2">
                             <span className="text-muted-foreground text-sm">ⓘ</span>
@@ -240,7 +283,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                           </div>
                           <div className="bg-muted/30 p-3 rounded-lg">
                             <p className="text-sm text-muted-foreground">
-                              {competitor.competitor_insights || `Major direct competitor with extensive presence and diverse offerings, representing a significant market share. ${competitor.product_innovation}`}
+                              {competitor.competitor_insights || `Major direct competitor with extensive presence and diverse offerings, representing a significant market share.`}
                             </p>
                           </div>
                         </div>
