@@ -36,6 +36,11 @@ import { Header } from "@/components/Header";
 const userSchema = z.object({
   email: z.string().email("Invalid email address"),
   fullName: z.string().min(1, "Name is required").max(100, "Name too long"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  companyName: z.string().optional(),
+  brandName: z.string().optional(),
+  industry: z.string().optional(),
+  companySize: z.string().optional(),
   role: z.enum(["admin", "marketing", "content", "assets"], {
     errorMap: () => ({ message: "Please select a role" }),
   }),
@@ -65,6 +70,11 @@ export default function UserManagement() {
   const [formData, setFormData] = useState({
     email: "",
     fullName: "",
+    password: "",
+    companyName: "",
+    brandName: "",
+    industry: "",
+    companySize: "",
     role: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -184,6 +194,11 @@ export default function UserManagement() {
           body: JSON.stringify({
             email: formData.email,
             fullName: formData.fullName,
+            password: formData.password,
+            companyName: formData.companyName,
+            brandName: formData.brandName,
+            industry: formData.industry,
+            companySize: formData.companySize,
             role: formData.role,
           }),
         }
@@ -201,7 +216,16 @@ export default function UserManagement() {
       });
 
       setCreateDialogOpen(false);
-      setFormData({ email: "", fullName: "", role: "" });
+      setFormData({ 
+        email: "", 
+        fullName: "", 
+        password: "",
+        companyName: "",
+        brandName: "",
+        industry: "",
+        companySize: "",
+        role: "" 
+      });
       fetchUsers();
     } catch (error: any) {
       console.error("Error creating user:", error);
@@ -275,15 +299,16 @@ export default function UserManagement() {
       <Header />
       
       <main className="container mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage users and their roles
-            </p>
-          </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-primary mb-2">User Management</h1>
+          <p className="text-muted-foreground">
+            Create and manage user accounts and roles
+          </p>
+        </div>
+
+        <div className="flex justify-end mb-6">
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2" size="lg">
+            <UserPlus className="h-5 w-5" />
             Add User
           </Button>
         </div>
@@ -342,53 +367,134 @@ export default function UserManagement() {
 
       {/* Create User Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-primary">User Management</DialogTitle>
             <DialogDescription>
-              Add a new user to the system and assign them a role.
+              Create and manage user accounts and roles
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="user@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive mt-1">{errors.email}</p>
-              )}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  placeholder="John Doe"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  className="mt-1.5"
+                />
+                {errors.fullName && (
+                  <p className="text-sm text-destructive mt-1">{errors.fullName}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="mt-1.5"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                )}
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
-                id="fullName"
-                placeholder="John Doe"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="mt-1.5"
               />
-              {errors.fullName && (
-                <p className="text-sm text-destructive mt-1">{errors.fullName}</p>
+              {errors.password && (
+                <p className="text-sm text-destructive mt-1">{errors.password}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="companyName">Company Name</Label>
+                <Input
+                  id="companyName"
+                  placeholder="Acme Inc"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="brandName">Brand Name</Label>
+                <Input
+                  id="brandName"
+                  placeholder="Acme Brand"
+                  value={formData.brandName}
+                  onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="industry">Industry</Label>
+                <Select value={formData.industry} onValueChange={(value) => setFormData({ ...formData, industry: value })}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="technology">Technology</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
+                    <SelectItem value="healthcare">Healthcare</SelectItem>
+                    <SelectItem value="education">Education</SelectItem>
+                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                    <SelectItem value="hospitality">Hospitality</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="companySize">Company Size</Label>
+                <Select value={formData.companySize} onValueChange={(value) => setFormData({ ...formData, companySize: value })}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-10">1-10 employees</SelectItem>
+                    <SelectItem value="11-50">11-50 employees</SelectItem>
+                    <SelectItem value="51-200">51-200 employees</SelectItem>
+                    <SelectItem value="201-500">201-500 employees</SelectItem>
+                    <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                    <SelectItem value="1000+">1000+ employees</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div>
               <Label htmlFor="role">Role</Label>
               <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="content">Content</SelectItem>
-                  <SelectItem value="assets">Assets</SelectItem>
+                  <SelectItem value="marketing">Marketing Manager</SelectItem>
+                  <SelectItem value="content">Content Editor</SelectItem>
+                  <SelectItem value="assets">Asset Manager</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (
@@ -397,10 +503,23 @@ export default function UserManagement() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-6">
             <Button
               variant="outline"
-              onClick={() => setCreateDialogOpen(false)}
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setFormData({
+                  email: "",
+                  fullName: "",
+                  password: "",
+                  companyName: "",
+                  brandName: "",
+                  industry: "",
+                  companySize: "",
+                  role: ""
+                });
+                setErrors({});
+              }}
               disabled={creating}
             >
               Cancel

@@ -10,6 +10,11 @@ interface CreateUserRequest {
   email: string;
   role: string;
   fullName?: string;
+  password?: string;
+  companyName?: string;
+  brandName?: string;
+  industry?: string;
+  companySize?: string;
 }
 
 serve(async (req) => {
@@ -51,7 +56,7 @@ serve(async (req) => {
       throw new Error("Unauthorized: Admin access required");
     }
 
-    const { email, role, fullName }: CreateUserRequest = await req.json();
+    const { email, role, fullName, password, companyName, brandName, industry, companySize }: CreateUserRequest = await req.json();
 
     // Validate role
     const validRoles = ["admin", "marketing", "content", "assets"];
@@ -62,14 +67,34 @@ serve(async (req) => {
     // Create the user using admin API
     const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
       email,
+      password: password || Math.random().toString(36).slice(-12),
       email_confirm: true,
       user_metadata: {
         full_name: fullName || email.split("@")[0],
+        company_name: companyName,
+        brand_name: brandName,
+        industry,
+        company_size: companySize,
       },
     });
 
     if (createError) {
       throw createError;
+    }
+
+    // Update profile with additional fields
+    const { error: profileUpdateError } = await supabaseClient
+      .from("profiles")
+      .update({
+        company_name: companyName,
+        brand_name: brandName,
+        industry,
+        company_size: companySize,
+      })
+      .eq("id", newUser.user.id);
+
+    if (profileUpdateError) {
+      console.error("Failed to update profile:", profileUpdateError);
     }
 
     // Assign role to the user

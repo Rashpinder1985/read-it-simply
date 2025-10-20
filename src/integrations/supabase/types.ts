@@ -204,27 +204,39 @@ export type Database = {
       }
       profiles: {
         Row: {
+          brand_name: string | null
           business_name: string | null
+          company_name: string | null
+          company_size: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           id: string
+          industry: string | null
           updated_at: string | null
         }
         Insert: {
+          brand_name?: string | null
           business_name?: string | null
+          company_name?: string | null
+          company_size?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          industry?: string | null
           updated_at?: string | null
         }
         Update: {
+          brand_name?: string | null
           business_name?: string | null
+          company_name?: string | null
+          company_size?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          industry?: string | null
           updated_at?: string | null
         }
         Relationships: []
