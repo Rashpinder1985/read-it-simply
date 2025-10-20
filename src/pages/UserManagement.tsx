@@ -34,6 +34,7 @@ import { z } from "zod";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const userSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -355,15 +356,24 @@ export default function UserManagement() {
                           <Badge variant="outline" className="mt-1">{competitor.category}</Badge>
                         )}
                       </div>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
-                        className="gap-2"
-                      >
-                        <Instagram className="h-4 w-4" />
-                        Follow
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
+                              className="gap-2"
+                            >
+                              <Instagram className="h-4 w-4" />
+                              Follow
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Opens Instagram in new tab</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">@{instagramHandle}</p>
                   </Card>

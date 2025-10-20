@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
 import { TrendingUp, TrendingDown, ExternalLink, Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -198,7 +199,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
               {socialData.length > 0 ? (
                 <div className="space-y-8">
                   {socialData.map((brandData, idx) => {
-                    const competitor = competitors.find((c: any) => c.brand_name === brandData.brand);
+                    const competitor = (competitors as any[]).find((c: any) => c.brand_name === brandData.brand);
                     const instagramHandle = competitor?.instagram_handle || brandData.brand.toLowerCase().replace(/\s+/g, '');
                     
                     return (
@@ -208,15 +209,24 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                           {brandData.brand}
                           <Badge variant="secondary">{brandData.posts.length} posts</Badge>
                         </h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
-                          className="gap-2"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Follow @{instagramHandle}
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
+                                className="gap-2"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                Follow @{instagramHandle}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Opens Instagram profile in new tab</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {brandData.posts.map((post, postIdx) => (
