@@ -51,6 +51,9 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   const { toast } = useToast();
   const [socialData, setSocialData] = useState<BrandSocialData[]>([]);
   const [isLoadingSocial, setIsLoadingSocial] = useState(false);
+  const [userInstagram, setUserInstagram] = useState(() => 
+    localStorage.getItem('userInstagram') || 'rashpinder85'
+  );
 
   const { data: marketData } = useQuery({
     queryKey: ['market-data'],
@@ -108,6 +111,18 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
     }
   };
 
+  const saveInstagramHandle = () => {
+    localStorage.setItem('userInstagram', userInstagram);
+    toast({
+      title: "Instagram Handle Saved",
+      description: "Your Instagram handle has been saved successfully",
+    });
+  };
+
+  const getCompetitorInstagramHandle = (brandName: string) => {
+    return brandName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
@@ -116,6 +131,27 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
         </DialogHeader>
 
         <div className="space-y-8">
+          {/* Instagram Handle Section */}
+          <Card className="p-4 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Your Instagram Handle</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={userInstagram}
+                    onChange={(e) => setUserInstagram(e.target.value)}
+                    placeholder="your_instagram_handle"
+                    className="flex-1 px-3 py-2 rounded-md border bg-background"
+                  />
+                  <Button onClick={saveInstagramHandle} size="sm">
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {/* Gold Rate Ticker */}
           <Card className="p-6 bg-gradient-to-r from-accent/10 to-primary/10 border-2 border-accent/30">
             <div className="flex items-center justify-between">
@@ -167,10 +203,21 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                 <div className="space-y-8">
                   {socialData.map((brandData, idx) => (
                     <div key={idx}>
-                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                        {brandData.brand}
-                        <Badge variant="secondary">{brandData.posts.length} posts</Badge>
-                      </h3>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                          {brandData.brand}
+                          <Badge variant="secondary">{brandData.posts.length} posts</Badge>
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`https://instagram.com/${getCompetitorInstagramHandle(brandData.brand)}`, '_blank')}
+                          className="gap-2"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Follow @{getCompetitorInstagramHandle(brandData.brand)}
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {brandData.posts.map((post, postIdx) => (
                           <Card key={postIdx} className="overflow-hidden hover:shadow-lg transition-all cursor-pointer" onClick={() => window.open(post.postUrl, '_blank')}>
