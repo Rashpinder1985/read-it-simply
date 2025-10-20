@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, XCircle, FileText, Video, Edit, Save, X, Upload, Sparkles, Image as ImageIcon } from "lucide-react";
+import { CheckCircle, XCircle, FileText, Video, Edit, Save, X, Upload, Sparkles, Image as ImageIcon, Clock, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { format } from "date-fns";
 
 interface ContentApprovalModalProps {
   open: boolean;
@@ -336,6 +337,19 @@ export const ContentApprovalModal = ({ open, onOpenChange }: ContentApprovalModa
                     Target: {item.personas.name} ({item.personas.segment})
                   </div>
                 )}
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3 pb-3 border-b">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span>Created: {format(new Date(item.created_at), 'MMM d, yyyy h:mm a')}</span>
+                  </div>
+                  {item.scheduled_for && (
+                    <div className="flex items-center gap-1 text-blue-600">
+                      <Calendar className="h-3 w-3" />
+                      <span>Scheduled: {format(new Date(item.scheduled_for), 'MMM d, yyyy h:mm a')}</span>
+                    </div>
+                  )}
+                </div>
 
                 {item.media_url && (
                   <div className="mb-3">
