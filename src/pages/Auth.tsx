@@ -68,11 +68,12 @@ const Auth = () => {
         });
         navigate("/");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred during sign up";
       toast({
         variant: "destructive",
         title: "Sign up failed",
-        description: error.message || "An error occurred during sign up",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -98,11 +99,12 @@ const Auth = () => {
         });
         navigate("/");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Invalid email or password";
       toast({
         variant: "destructive",
         title: "Sign in failed",
-        description: error.message || "Invalid email or password",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -126,11 +128,12 @@ const Auth = () => {
       });
       setShowForgotPassword(false);
       setResetEmail("");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to send reset email";
       toast({
         variant: "destructive",
         title: "Reset failed",
-        description: error.message || "Failed to send reset email",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);

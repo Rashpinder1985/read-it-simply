@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { AIEmployee } from "@/components/AIEmployee";
 import { StatsCard } from "@/components/StatsCard";
 import { MarketPulseModal } from "@/components/MarketPulseModal";
+import { AIAssistant } from "@/components/AIAssistant";
 import { PersonasModal } from "@/components/PersonasModal";
 import { ContentApprovalModal } from "@/components/ContentApprovalModal";
 import { ContentSchedulingModal } from "@/components/ContentSchedulingModal";
@@ -29,6 +30,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSampleDataGenerator } from "@/hooks/useSampleDataGenerator";
 import { useToast } from "@/hooks/use-toast";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +47,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const { handleError } = useErrorHandler();
   useSampleDataGenerator(); // Auto-generate sample data for new users
   const [marketPulseOpen, setMarketPulseOpen] = useState(false);
   const [personasOpen, setPersonasOpen] = useState(false);
@@ -75,7 +78,7 @@ const Dashboard = () => {
         if (error) throw error;
         setUserRole(data?.role || null);
       } catch (error) {
-        console.error("Error fetching user role:", error);
+        handleError(error, "fetching user role");
       } finally {
         setRoleLoading(false);
       }
@@ -135,12 +138,7 @@ const Dashboard = () => {
         window.location.reload();
       }
     } catch (error) {
-      console.error('Error resetting data:', error);
-      toast({
-        title: "Reset Failed",
-        description: "There was an error resetting your data. Please try again.",
-        variant: "destructive"
-      });
+      handleError(error, "resetting data");
     } finally {
       setIsResetting(false);
     }
@@ -337,6 +335,31 @@ const Dashboard = () => {
                 ]}
               />
             </div>
+          </div>
+        </div>
+
+        {/* AI Assistant Integration */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <StatsCard
+                title="AI Requests Processed"
+                value="1,247"
+                change="+12.5%"
+                trend="up"
+                icon={Brain}
+              />
+              <StatsCard
+                title="AI Confidence Score"
+                value="94.2%"
+                change="+2.1%"
+                trend="up"
+                icon={Target}
+              />
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <AIAssistant className="h-96" />
           </div>
         </div>
 
