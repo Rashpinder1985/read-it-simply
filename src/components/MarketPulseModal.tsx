@@ -38,6 +38,32 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   );
   const [competitorAnalysis, setCompetitorAnalysis] = useState<Record<string, any>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedScope, setSelectedScope] = useState<'local' | 'regional' | 'national' | 'international'>('national');
+
+  // Fetch competitors from the new table
+  const { data: competitorsData } = useQuery({
+    queryKey: ['competitors', selectedScope],
+    queryFn: async () => {
+      let query = supabase.from('competitors').select('*');
+      
+      // Filter based on selected scope
+      if (selectedScope === 'national') {
+        query = query.eq('scope', 'national');
+      } else if (selectedScope === 'regional') {
+        // Will be enhanced based on user's region
+        query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west']);
+      } else if (selectedScope === 'international') {
+        query = query.eq('scope', 'international');
+      } else if (selectedScope === 'local') {
+        // Will be enhanced based on user's city
+        query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west', 'national']);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   const { data: marketData } = useQuery({
     queryKey: ['market-data'],
@@ -61,7 +87,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
         .from('business_details')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     }
@@ -72,15 +98,8 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   const goldChange = currentGoldRate > 7450 ? '+2.3%' : '-1.2%';
   const isPositive = currentGoldRate > 7450;
 
-  // Group competitors by brand
-  const competitorsByBrand = marketData?.reduce((acc: any, item) => {
-    if (!acc[item.brand_name]) {
-      acc[item.brand_name] = item;
-    }
-    return acc;
-  }, {}) || {};
-
-  const competitors = Object.values(competitorsByBrand);
+  // Use competitors from the new table
+  const competitors = competitorsData || [];
 
   // Analyze competitors with real-time web search
   useEffect(() => {
@@ -143,9 +162,49 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
         </DialogHeader>
 
         <div className="space-y-8">
-          {/* Instagram Handle Section */}
+          {/* Scope Selection */}
           <Card className="p-4 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
-            <div className="flex items-center gap-4">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Market Analysis Scope</label>
+                <div className="grid grid-cols-4 gap-2">
+                  <Button
+                    variant={selectedScope === 'local' ? 'default' : 'outline'}
+                    onClick={() => setSelectedScope('local')}
+                    size="sm"
+                  >
+                    Local
+                  </Button>
+                  <Button
+                    variant={selectedScope === 'regional' ? 'default' : 'outline'}
+                    onClick={() => setSelectedScope('regional')}
+                    size="sm"
+                  >
+                    Regional
+                  </Button>
+                  <Button
+                    variant={selectedScope === 'national' ? 'default' : 'outline'}
+                    onClick={() => setSelectedScope('national')}
+                    size="sm"
+                  >
+                    National
+                  </Button>
+                  <Button
+                    variant={selectedScope === 'international' ? 'default' : 'outline'}
+                    onClick={() => setSelectedScope('international')}
+                    size="sm"
+                  >
+                    International
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {selectedScope === 'local' && 'Analyzing competitors in your city and nearby areas'}
+                  {selectedScope === 'regional' && 'Analyzing competitors in your region (North/South/East/West India)'}
+                  {selectedScope === 'national' && 'Analyzing major national jewelry chains across India'}
+                  {selectedScope === 'international' && 'Analyzing international jewelry brands operating in India'}
+                </p>
+              </div>
+              
               <div className="flex-1">
                 <label className="text-sm font-medium mb-2 block">Your Instagram Handle</label>
                 <div className="flex gap-2">
@@ -319,11 +378,12 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                     data={competitors
                       .map((competitor: any) => {
                         const analysis = competitorAnalysis[competitor.id];
+                        const businessName = competitor.business_name || competitor.brand_name;
                         return {
-                          name: competitor.brand_name?.length > 18 
-                            ? competitor.brand_name.substring(0, 16) + '...' 
-                            : competitor.brand_name,
-                          score: analysis?.relevanceScore || competitor.relevance_score || 75
+                          name: businessName?.length > 18 
+                            ? businessName.substring(0, 16) + '...' 
+                            : businessName,
+                          score: analysis?.relevanceScore || 75
                         };
                       })
                       .sort((a, b) => b.score - a.score)
@@ -661,144 +721,165 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
             {/* Competitor Analysis Tab */}
             <TabsContent value="competitors" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {competitors.map((competitor: any, index: number) => {
-                  const analysis = competitorAnalysis[competitor.id];
-                  const isLoading = !analysis && isAnalyzing;
+              <p className="text-muted-foreground mb-4">
+                Detailed analysis of top competitors in your market segment ({selectedScope} scope) - {competitors.length} competitors found
+              </p>
+              
+              {competitors.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <p className="text-muted-foreground">No competitors found for the selected scope. Try selecting a different scope.</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {competitors.map((competitor: any, index: number) => {
+                    const analysis = competitorAnalysis[competitor.id];
+                    const isLoading = !analysis && isAnalyzing;
+                    
+                    // Use analysis data if available, otherwise use default values
+                    const relevanceScore = analysis?.relevanceScore || 85;
+                    const isAiSelected = analysis?.isAiSelected || false;
+                    const region = competitor?.region || analysis?.region || "Pan-India";
+                    const competitorInsight = analysis?.competitorInsight || 
+                      (isLoading ? "Analyzing competitor with real-time market data..." : 
+                       `Major competitor in the ${competitor.category || 'jewellery'} segment with significant market presence.`);
+                    
+                    const instagramHandle = competitor?.instagram_handle || competitor.business_name?.toLowerCase().replace(/\s+/g, '');
+                    const website = `https://www.${competitor.business_name?.toLowerCase().replace(/\s+/g, '')}.com`;
                   
-                  // Use analysis data if available, otherwise use default values
-                  const relevanceScore = analysis?.relevanceScore || 85;
-                  const isAiSelected = analysis?.isAiSelected || false;
-                  const region = analysis?.region || "Pan-India";
-                  const competitorInsight = analysis?.competitorInsight || 
-                    (isLoading ? "Analyzing competitor with real-time market data..." : 
-                     `Major competitor in the ${competitor.category || 'jewellery'} segment with significant market presence.`);
-                  
-                  const instagramHandle = competitor?.instagram_handle || competitor.brand_name.toLowerCase().replace(/\s+/g, '');
-                  const socialMediaLinks = competitor?.social_media_links || {};
-                  const website = socialMediaLinks?.website || `https://www.${competitor.brand_name.toLowerCase().replace(/\s+/g, '')}.com`;
-                  
-                  return (
-                    <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all border-2 border-primary/20 relative">
-                      {isAiSelected && (
-                        <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
-                          ✓ AI Selected
-                        </Badge>
-                      )}
-                      {isLoading && (
-                        <Badge className="absolute top-4 right-4 bg-accent text-accent-foreground animate-pulse">
-                          Analyzing...
-                        </Badge>
-                      )}
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-bold text-2xl mb-1">{competitor.brand_name}</h4>
-                          <p className="text-sm text-muted-foreground">{competitor.category}</p>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Region:</span>
-                            <span className="font-semibold">{region}</span>
+                    return (
+                      <Card key={competitor.id} className="p-6 hover:shadow-lg transition-all border-2 border-primary/20 relative">
+                        {isAiSelected && (
+                          <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
+                            ✓ AI Selected
+                          </Badge>
+                        )}
+                        {isLoading && (
+                          <Badge className="absolute top-4 right-4 bg-accent text-accent-foreground animate-pulse">
+                            Analyzing...
+                          </Badge>
+                        )}
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-bold text-2xl mb-1">{competitor.business_name}</h4>
+                            {competitor.brand_names && (
+                              <p className="text-xs text-muted-foreground mb-1">{competitor.brand_names}</p>
+                            )}
+                            <p className="text-sm text-muted-foreground">{competitor.category}</p>
                           </div>
 
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Category:</span>
-                            <span className="font-semibold text-sm">{competitor.category}</span>
-                          </div>
-
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Relevance Score:</span>
-                              <span className="font-bold text-primary text-lg">{relevanceScore}/100</span>
+                              <span className="text-muted-foreground">Region:</span>
+                              <span className="font-semibold">{region}</span>
                             </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all"
-                                style={{ width: `${relevanceScore}%` }}
-                              />
+
+                            {competitor.number_of_stores && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Stores:</span>
+                                <span className="font-semibold text-sm">{competitor.number_of_stores}</span>
+                              </div>
+                            )}
+
+                            {competitor.average_price_range && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Price Range:</span>
+                                <span className="font-semibold text-sm">{competitor.average_price_range}</span>
+                              </div>
+                            )}
+
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Relevance Score:</span>
+                                <span className="font-bold text-primary text-lg">{relevanceScore}/100</span>
+                              </div>
+                              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all"
+                                  style={{ width: `${relevanceScore}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {competitor.hq_address && (
+                            <div className="pt-4 border-t space-y-3">
+                              <div>
+                                <span className="font-semibold block mb-1 text-sm">Headquarters</span>
+                                <p className="text-sm text-muted-foreground">{competitor.hq_address}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {competitor.owner_name && (
+                            <div className="pt-2 border-t space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground text-sm">Owner:</span>
+                                <span className="font-semibold text-sm">{competitor.owner_name}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="pt-4 border-t space-y-3">
+                            {competitor.instagram_url && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium min-w-[80px]">Instagram:</span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(competitor.instagram_url, '_blank')}
+                                  className="gap-2 flex-1"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                  @{instagramHandle}
+                                </Button>
+                              </div>
+                            )}
+
+                            {competitor.facebook_url && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium min-w-[80px]">Facebook:</span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(competitor.facebook_url, '_blank')}
+                                  className="gap-2 flex-1"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                  {competitor.facebook_name}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-4 border-t">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="text-muted-foreground text-sm">ⓘ</span>
+                              <span className="font-semibold text-sm">Why this competitor?</span>
+                            </div>
+                            <div className="bg-muted/30 p-3 rounded-lg">
+                              <p className="text-sm text-muted-foreground">
+                                {competitorInsight}
+                              </p>
                             </div>
                           </div>
                         </div>
-
-                        <div className="pt-4 border-t space-y-3">
-                          <div>
-                            <span className="font-semibold block mb-1 text-sm">Latest Innovation</span>
-                            <p className="text-sm text-muted-foreground">{competitor.product_innovation}</p>
-                          </div>
-                          
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-semibold text-sm">Recent Update</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
-                                className="h-6 px-2 text-xs gap-1"
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                Verify on Instagram
-                              </Button>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{competitor.major_update}</p>
-                          </div>
-                        </div>
-
-                        <div className="pt-4 border-t space-y-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium min-w-[80px]">Instagram:</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(`https://instagram.com/${instagramHandle}`, '_blank')}
-                              className="gap-2 flex-1"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              @{instagramHandle}
-                            </Button>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium min-w-[80px]">Website:</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(website, '_blank')}
-                              className="gap-2 flex-1"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              Visit Website
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="pt-4 border-t">
-                          <div className="flex items-start gap-2 mb-2">
-                            <span className="text-muted-foreground text-sm">ⓘ</span>
-                            <span className="font-semibold text-sm">Why this competitor?</span>
-                          </div>
-                          <div className="bg-muted/30 p-3 rounded-lg">
-                            <p className="text-sm text-muted-foreground">
-                              {competitorInsight}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
 
             {/* 10-Year Historical Trends Tab */}
             <TabsContent value="historical" className="space-y-6 mt-6">
-              {competitors.map((competitor: any) => {
-                const tenYearData = generate10YearData(Number(competitor.gold_price));
+              <p className="text-muted-foreground mb-4">10-year gold price trends across the Indian jewelry market</p>
+              {competitors.slice(0, 5).map((competitor: any) => {
+                const tenYearData = generate10YearData(7500); // Using current gold price
                 
                 return (
                   <Card key={competitor.id} className="p-6">
-                    <h3 className="text-xl font-bold mb-4">{competitor.brand_name} - 10 Year Price Trend</h3>
+                    <h3 className="text-xl font-bold mb-4">{competitor.business_name || competitor.brand_name} - 10 Year Gold Price Trend</h3>
                     <ResponsiveContainer width="100%" height={300}>
                       <AreaChart data={tenYearData}>
                         <defs>
