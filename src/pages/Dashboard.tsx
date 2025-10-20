@@ -15,7 +15,8 @@ import {
   Brain,
   Target,
   Sparkles,
-  Clock
+  Clock,
+  Building2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -90,6 +91,18 @@ const Dashboard = () => {
       <ContentSchedulingModal open={contentSchedulingOpen} onOpenChange={setContentSchedulingOpen} />
       
       <main className="container mx-auto px-6 py-8">
+        {/* Business Details Button */}
+        <div className="mb-6 flex justify-end">
+          <Button 
+            onClick={() => navigate("/business-details")}
+            variant="outline"
+            className="gap-2"
+          >
+            <Building2 className="h-4 w-4" />
+            Manage Business Details
+          </Button>
+        </div>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div onClick={() => setMarketPulseOpen(true)} className="cursor-pointer">
