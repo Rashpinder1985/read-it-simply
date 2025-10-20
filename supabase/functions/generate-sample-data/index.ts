@@ -294,37 +294,23 @@ serve(async (req) => {
 
     if (marketError) throw marketError;
 
-    // Create sample content for next 2 weeks
+    // Create only 1 sample content to guide new users
     const today = new Date();
-    const sampleContent = [];
+    const scheduleDate = new Date(today);
+    scheduleDate.setDate(today.getDate() + 1);
+    scheduleDate.setHours(10, 0, 0, 0);
 
-    for (let i = 0; i < 14; i++) {
-      const scheduleDate = new Date(today);
-      scheduleDate.setDate(today.getDate() + i);
-      scheduleDate.setHours(i % 2 === 0 ? 10 : 17, 0, 0, 0);
-
-      const contentTypes = ['post', 'reel'];
-      const type = contentTypes[i % 2];
-      const personaId = personasData[i % 3].id;
-
-      sampleContent.push({
-        user_id: userId,
-        persona_id: personaId,
-        type: type,
-        status: 'pending_approval', // Changed from 'approved' to require owner approval
-        title: type === 'post' 
-          ? `Diwali Special Day ${i + 1}` 
-          : `Reel: Festival Collection ${i + 1}`,
-        description: type === 'post'
-          ? `Celebrate Diwali with our stunning ${i % 2 === 0 ? 'gold' : 'diamond'} collection`
-          : `Watch our latest festival collection showcase`,
-        content_text: type === 'post'
-          ? `✨ This Diwali, shine brighter than ever! ✨\n\nDiscover our exclusive ${i % 2 === 0 ? 'gold' : 'diamond'} collection designed for the festival of lights.\n\n${businessName || 'Golden treasures'} brings you timeless elegance meets modern design.\n\n🪔 Limited time offer\n💎 Certified purity guaranteed\n🎁 Special festive discounts`
-          : `Create stunning reels showcasing our ${i % 3 === 0 ? 'bridal' : i % 3 === 1 ? 'festival' : 'daily wear'} collection`,
-        hashtags: ["#Diwali2024", "#JewelryLove", "#GoldJewelry", "#FestiveCollection", `#${(businessName || 'GoldenTreasures').replace(/\s/g, '')}`],
-        scheduled_for: scheduleDate.toISOString()
-      });
-    }
+    const sampleContent = [{
+      user_id: userId,
+      persona_id: personasData[0].id,
+      type: 'post',
+      status: 'pending_approval',
+      title: "Sample: Diwali Festival Collection",
+      description: "This is a sample post to guide you. You can edit, approve, or delete it.",
+      content_text: `✨ This Diwali, shine brighter than ever! ✨\n\nDiscover our exclusive gold collection designed for the festival of lights.\n\n${businessName || 'Your Business'} brings you timeless elegance meets modern design.\n\n🪔 Limited time offer\n💎 Certified purity guaranteed\n🎁 Special festive discounts`,
+      hashtags: ["#Diwali2024", "#JewelryLove", "#GoldJewelry", "#FestiveCollection", `#${(businessName || 'YourBusiness').replace(/\s/g, '')}`],
+      scheduled_for: scheduleDate.toISOString()
+    }];
 
     const { error: contentError } = await supabaseClient
       .from('content')

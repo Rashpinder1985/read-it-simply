@@ -18,7 +18,9 @@ import {
   Sparkles,
   Clock,
   Building2,
-  UserCog
+  UserCog,
+  RefreshCw,
+  Trash2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -26,10 +28,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSampleDataGenerator } from "@/hooks/useSampleDataGenerator";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { toast } = useToast();
   useSampleDataGenerator(); // Auto-generate sample data for new users
   const [marketPulseOpen, setMarketPulseOpen] = useState(false);
   const [personasOpen, setPersonasOpen] = useState(false);
@@ -38,6 +53,7 @@ const Dashboard = () => {
   const [contentGeneratorOpen, setContentGeneratorOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -98,6 +114,38 @@ const Dashboard = () => {
   const pendingContent = content?.filter(c => c.status === 'pending_approval').length || 0;
   const approvedContent = content?.filter(c => c.status === 'approved').length || 0;
 
+  const handleResetData = async () => {
+    if (!user) return;
+    
+    setIsResetting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-sample-data', {
+        body: { userId: user.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Data Reset Complete",
+          description: "All sample data has been deleted. You can now start fresh.",
+        });
+        
+        // Refresh the page
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error resetting data:', error);
+      toast({
+        title: "Reset Failed",
+        description: "There was an error resetting your data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (loading || roleLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
@@ -143,6 +191,40 @@ const Dashboard = () => {
               <UserCog className="h-4 w-4" />
               User Management
             </Button>
+          )}
+
+          {isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="gap-2 text-destructive hover:text-destructive"
+                  disabled={isResetting}
+                >
+                  {isResetting ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Reset All Data
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all personas, market data, and content from your account. 
+                    This action cannot be undone. You will start with a clean slate.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetData} className="bg-destructive hover:bg-destructive/90">
+                    Yes, Delete Everything
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
 
