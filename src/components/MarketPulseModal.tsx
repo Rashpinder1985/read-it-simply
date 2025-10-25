@@ -42,21 +42,50 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
 
   // Fetch competitors from the new table
   const { data: competitorsData } = useQuery({
-    queryKey: ['competitors', selectedScope],
+    queryKey: ['competitors', selectedScope, businessDetails],
     queryFn: async () => {
       let query = supabase.from('competitors').select('*');
+      
+      // Get user's city from business details
+      const userCity = (businessDetails?.branches as any[])?.[0]?.city?.toLowerCase();
       
       // Filter based on selected scope
       if (selectedScope === 'national') {
         query = query.eq('scope', 'national');
       } else if (selectedScope === 'regional') {
-        // Will be enhanced based on user's region
-        query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west']);
+        // Filter by region based on user's location
+        if (userCity && (userCity.includes('delhi') || userCity.includes('chandigarh') || userCity.includes('punjab'))) {
+          query = query.in('scope', ['regional_north', 'national']);
+        } else if (userCity && (userCity.includes('mumbai') || userCity.includes('pune'))) {
+          query = query.in('scope', ['regional_west', 'national']);
+        } else if (userCity && (userCity.includes('bangalore') || userCity.includes('chennai'))) {
+          query = query.in('scope', ['regional_south', 'national']);
+        } else if (userCity && (userCity.includes('kolkata'))) {
+          query = query.in('scope', ['regional_east', 'national']);
+        } else {
+          query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west', 'national']);
+        }
       } else if (selectedScope === 'international') {
         query = query.eq('scope', 'international');
       } else if (selectedScope === 'local') {
-        // Will be enhanced based on user's city
-        query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west', 'national']);
+        // Filter by specific city
+        if (userCity) {
+          // First try exact city match
+          query = query.ilike('city', `%${userCity}%`);
+          const { data: cityData } = await query;
+          if (cityData && cityData.length > 0) {
+            return cityData;
+          }
+          
+          // Fallback to region-based filtering
+          if (userCity.includes('chandigarh') || userCity.includes('delhi') || userCity.includes('punjab')) {
+            query = supabase.from('competitors').select('*');
+            query = query.in('scope', ['regional_north', 'national']);
+            query = query.or('city.ilike.%Chandigarh%,city.ilike.%Delhi%,city.ilike.%Punjab%');
+          }
+        } else {
+          query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west', 'national']);
+        }
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });

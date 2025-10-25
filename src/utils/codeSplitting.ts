@@ -63,7 +63,7 @@ class CodeSplittingManager {
   // Dynamically import a module with error handling
   async dynamicImport<T>(modulePath: string): Promise<T> {
     try {
-      const module = await import(modulePath);
+      const module = await import(/* @vite-ignore */ modulePath);
       return module.default || module;
     } catch (error) {
       console.error(`Failed to load module ${modulePath}:`, error);
