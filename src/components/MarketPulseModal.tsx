@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { competitorDataService, type ScopeType } from "@/services/competitorDataService";
 
 interface MarketPulseModalProps {
   open: boolean;
@@ -57,9 +58,85 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
     }
   });
 
-  // Fetch competitors from the new table
+  // Fetch competitors from CSV knowledge base
   const { data: competitorsData } = useQuery({
-    queryKey: ['competitors', selectedScope, businessDetails],
+    queryKey: ['competitors-csv', selectedScope, businessDetails],
+    queryFn: async () => {
+      // Get user's city and state from business details
+      const userCity = (businessDetails?.branches as any[])?.[0]?.city;
+      const userState = (businessDetails?.branches as any[])?.[0]?.state;
+      
+      const competitors = await competitorDataService.getCompetitorsByScope(
+        selectedScope as ScopeType,
+        userCity,
+        userState
+      );
+      
+      return competitors;
+    }
+  });
+
+  // Get market positioning data
+  const { data: marketPositioning } = useQuery({
+    queryKey: ['market-positioning', selectedScope, businessDetails],
+    queryFn: async () => {
+      const userCity = (businessDetails?.branches as any[])?.[0]?.city;
+      const userState = (businessDetails?.branches as any[])?.[0]?.state;
+      
+      return await competitorDataService.getMarketPositioning(
+        selectedScope as ScopeType,
+        userCity,
+        userState
+      );
+    }
+  });
+
+  // Get metal distribution
+  const { data: metalDistribution } = useQuery({
+    queryKey: ['metal-distribution', selectedScope, businessDetails],
+    queryFn: async () => {
+      const userCity = (businessDetails?.branches as any[])?.[0]?.city;
+      const userState = (businessDetails?.branches as any[])?.[0]?.state;
+      
+      return await competitorDataService.getMetalDistribution(
+        selectedScope as ScopeType,
+        userCity,
+        userState
+      );
+    }
+  });
+
+  // Get market presence stats
+  const { data: marketStats } = useQuery({
+    queryKey: ['market-stats', selectedScope, businessDetails],
+    queryFn: async () => {
+      const userCity = (businessDetails?.branches as any[])?.[0]?.city;
+      const userState = (businessDetails?.branches as any[])?.[0]?.state;
+      
+      return await competitorDataService.getMarketPresenceStats(
+        selectedScope as ScopeType,
+        userCity,
+        userState
+      );
+    }
+  });
+
+  // Get city distribution for regional/national view
+  const { data: cityDistribution } = useQuery({
+    queryKey: ['city-distribution', selectedScope, businessDetails],
+    queryFn: async () => {
+      const userState = (businessDetails?.branches as any[])?.[0]?.state;
+      
+      return await competitorDataService.getCityDistribution(
+        selectedScope as ScopeType,
+        userState
+      );
+    }
+  });
+
+  // Legacy query - keep for backward compatibility but filter based on selected scope
+  const { data: legacyCompetitorsData } = useQuery({
+    queryKey: ['competitors-legacy', selectedScope, businessDetails],
     queryFn: async () => {
       let query = supabase.from('competitors').select('*');
       
@@ -128,27 +205,27 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   const goldChange = currentGoldRate > 7450 ? '+2.3%' : '-1.2%';
   const isPositive = currentGoldRate > 7450;
 
-  // Use competitors from the new table
+  // Use competitors from CSV knowledge base
   const competitors = competitorsData || [];
 
-  // Analyze competitors with real-time web search
+  // Analyze competitors with real-time web search (using competitor_name from CSV)
   useEffect(() => {
     const analyzeCompetitors = async () => {
       if (!competitors.length || !open) return;
       
       setIsAnalyzing(true);
       
-      for (const competitor of competitors) {
+      for (const competitor of competitors.slice(0, 10)) { // Limit to top 10 to avoid rate limits
         const compData = competitor as any;
-        // Skip if already analyzed
-        if (competitorAnalysis[compData.id]) continue;
+        // Skip if already analyzed (use competitor_name as key)
+        if (competitorAnalysis[compData.competitor_name]) continue;
 
         try {
-          console.log('Analyzing competitor:', compData.business_name);
+          console.log('Analyzing competitor:', compData.competitor_name);
           
           const { data, error } = await supabase.functions.invoke('analyze-competitor', {
             body: {
-              competitorName: compData.business_name,
+              competitorName: compData.competitor_name,
               userBusinessName: businessDetails?.company_name || '',
               userCategory: businessDetails?.primary_segments?.[0] || 'jewellery',
             },
@@ -162,7 +239,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
           if (data?.success) {
             setCompetitorAnalysis(prev => ({
               ...prev,
-              [compData.id]: data.data,
+              [compData.competitor_name]: data.data,
             }));
           }
         } catch (error) {
@@ -252,6 +329,31 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
               </div>
             </div>
           </Card>
+
+          {/* Market Statistics Card */}
+          {marketStats && (
+            <Card className="p-6 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+              <h3 className="text-xl font-bold mb-4">Market Overview - {selectedScope.charAt(0).toUpperCase() + selectedScope.slice(1)}</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-primary">{marketStats.total}</p>
+                  <p className="text-sm text-muted-foreground">Total Competitors</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-green-500">{marketStats.high}</p>
+                  <p className="text-sm text-muted-foreground">High Presence</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-accent">{marketStats.avgRating.toFixed(1)}</p>
+                  <p className="text-sm text-muted-foreground">Avg Rating</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-primary">{marketStats.totalReviews.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Total Reviews</p>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {/* Gold Rate Ticker */}
           <Card className="p-6 bg-gradient-to-r from-accent/10 to-primary/10 border-2 border-accent/30">
@@ -395,23 +497,21 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                 </ResponsiveContainer>
               </Card>
 
-              {/* 3. Top Competitors by AI Relevance Score */}
+              {/* 3. Top Competitors by Market Strength (Real Data) */}
               <Card className="p-6">
-                <h3 className="text-xl font-bold mb-2">Top Competitors by Market Strength</h3>
-                <p className="text-sm text-muted-foreground mb-4">Ranked by AI relevance score - higher scores indicate stronger competitive threat</p>
+                <h3 className="text-xl font-bold mb-2">Top Competitors by Market Presence</h3>
+                <p className="text-sm text-muted-foreground mb-4">Based on ratings, reviews, and market presence from knowledge base</p>
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart
-                    data={competitors
-                      .map((competitor: any) => {
-                        const analysis = competitorAnalysis[competitor.id];
-                        const businessName = competitor.business_name || competitor.brand_name;
-                        return {
-                          name: businessName?.length > 18 
-                            ? businessName.substring(0, 16) + '...' 
-                            : businessName,
-                          score: analysis?.relevanceScore || 75
-                        };
-                      })
+                    data={(competitorsData || [])
+                      .map((competitor: any) => ({
+                        name: competitor.competitor_name?.length > 18 
+                          ? competitor.competitor_name.substring(0, 16) + '...' 
+                          : competitor.competitor_name,
+                        score: (competitor.rating_avg || 0) * 20,
+                        reviews: competitor.review_count || 0,
+                        presence: competitor.market_presence_label
+                      }))
                       .sort((a, b) => b.score - a.score)
                       .slice(0, 10)}
                     layout="vertical"
@@ -425,53 +525,36 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         backgroundColor: 'hsl(var(--background))', 
                         border: '1px solid hsl(var(--border))' 
                       }}
+                      content={({ payload }) => {
+                        if (!payload || !payload[0]) return null;
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-background border border-border p-3 rounded-lg shadow-lg">
+                            <p className="font-semibold">{data.name}</p>
+                            <p className="text-sm">Rating: {(data.score / 20).toFixed(1)}/5</p>
+                            <p className="text-sm">Reviews: {data.reviews}</p>
+                            <p className="text-sm">Presence: {data.presence}</p>
+                          </div>
+                        );
+                      }}
                     />
                     <Bar dataKey="score" fill="#10b981" radius={[0, 8, 8, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
 
-              {/* 4. Market Positioning Matrix */}
+              {/* 4. Market Positioning Matrix (Real Data) */}
               <Card className="p-6">
                 <h3 className="text-xl font-bold mb-2">Market Positioning Matrix</h3>
-                <p className="text-sm text-muted-foreground mb-4">Strategic gap analysis - Your segments vs competitor focus areas</p>
+                <p className="text-sm text-muted-foreground mb-4">Metal specialization distribution across {selectedScope} market</p>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
-                    data={(() => {
-                      const userSegments = Array.isArray(businessDetails?.primary_segments) 
-                        ? businessDetails.primary_segments 
-                        : [];
-                      const categoryCounts: Record<string, { competitors: number; yourFocus: number }> = {};
-                      
-                      // Count competitor categories
-                      competitors.forEach((competitor: any) => {
-                        const category = competitor.category || "Gold & Diamond";
-                        if (!categoryCounts[category]) {
-                          categoryCounts[category] = { competitors: 0, yourFocus: 0 };
-                        }
-                        categoryCounts[category].competitors += 1;
-                      });
-                      
-                      // Mark your focus areas
-                      userSegments.forEach((segment: any) => {
-                        if (!categoryCounts[segment]) {
-                          categoryCounts[segment] = { competitors: 0, yourFocus: 1 };
-                        } else {
-                          categoryCounts[segment].yourFocus = 1;
-                        }
-                      });
-                      
-                      return Object.entries(categoryCounts).map(([category, data]) => ({
-                        category,
-                        competitors: data.competitors,
-                        yourFocus: data.yourFocus * 2, // Scale for visibility
-                      }));
-                    })()}
+                    data={metalDistribution || []}
                     margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis 
-                      dataKey="category" 
+                      dataKey="metal" 
                       angle={-45}
                       textAnchor="end"
                       height={100}
@@ -482,15 +565,55 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                         backgroundColor: 'hsl(var(--background))', 
                         border: '1px solid hsl(var(--border))' 
                       }}
+                      content={({ payload }) => {
+                        if (!payload || !payload[0]) return null;
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-background border border-border p-3 rounded-lg shadow-lg">
+                            <p className="font-semibold">{data.metal}</p>
+                            <p className="text-sm">Count: {data.count}</p>
+                            <p className="text-sm">Percentage: {data.percentage}%</p>
+                          </div>
+                        );
+                      }}
                     />
-                    <Legend />
-                    <Bar dataKey="competitors" fill="hsl(var(--primary))" name="Competitor Count" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="yourFocus" fill="hsl(var(--accent))" name="Your Focus" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" name="Competitors" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
 
-              {/* 5. Innovation Activity Tracker */}
+              {/* 5. City/Region Distribution */}
+              {cityDistribution && cityDistribution.length > 0 && (
+                <Card className="p-6">
+                  <h3 className="text-xl font-bold mb-2">Geographic Distribution</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Top cities by competitor count in {selectedScope} scope</p>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart
+                      data={cityDistribution.slice(0, 15)}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="city" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={120}
+                        interval={0}
+                      />
+                      <YAxis label={{ value: 'Competitors', angle: -90, position: 'insideLeft' }} />
+                      <ChartTooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))', 
+                          border: '1px solid hsl(var(--border))' 
+                        }}
+                      />
+                      <Bar dataKey="count" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+              )}
+
+              {/* 6. Innovation Activity Tracker */}
               <Card className="p-6">
                 <h3 className="text-xl font-bold mb-2">Innovation Activity Tracker</h3>
                 <p className="text-sm text-muted-foreground mb-4">

@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { mlScorer, FeatureEngineer, trendPredictor } from "@/ml/competitorScorer";
 import { realTimeDataService } from "@/services/realTimeDataService";
 import { sentimentAnalyzer } from "@/services/sentimentAnalyzer";
+import { competitorDataService, type ScopeType } from "@/services/competitorDataService";
 
 interface EnhancedMarketPulseModalProps {
   open: boolean;
@@ -31,25 +32,53 @@ export const EnhancedMarketPulseModal = ({ open, onOpenChange }: EnhancedMarketP
   const [mlScores, setMlScores] = useState<Map<string, any>>(new Map());
   const [trendPredictions, setTrendPredictions] = useState<any>(null);
 
-  // Fetch competitors with enhanced ML scoring
-  const { data: competitorsData } = useQuery({
-    queryKey: ['competitors', selectedScope],
+  // Fetch business details for location context
+  const { data: businessDetails } = useQuery({
+    queryKey: ['business-details'],
     queryFn: async () => {
-      let query = supabase.from('competitors').select('*');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
       
-      if (selectedScope === 'national') {
-        query = query.eq('scope', 'national');
-      } else if (selectedScope === 'regional') {
-        query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west']);
-      } else if (selectedScope === 'international') {
-        query = query.eq('scope', 'international');
-      } else if (selectedScope === 'local') {
-        query = query.in('scope', ['regional_north', 'regional_south', 'regional_east', 'regional_west', 'national']);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('business_details')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
       if (error) throw error;
-      return data || [];
+      return data;
+    }
+  });
+
+  // Fetch competitors from CSV knowledge base with enhanced ML scoring
+  const { data: competitorsData } = useQuery({
+    queryKey: ['competitors-csv-enhanced', selectedScope, businessDetails],
+    queryFn: async () => {
+      const userCity = (businessDetails?.branches as any[])?.[0]?.city;
+      const userState = (businessDetails?.branches as any[])?.[0]?.state;
+      
+      const competitors = await competitorDataService.getCompetitorsByScope(
+        selectedScope as ScopeType,
+        userCity,
+        userState
+      );
+      
+      return competitors || [];
+    }
+  });
+
+  // Get top competitors for analysis
+  const { data: topCompetitors } = useQuery({
+    queryKey: ['top-competitors', selectedScope, businessDetails],
+    queryFn: async () => {
+      const userCity = (businessDetails?.branches as any[])?.[0]?.city;
+      const userState = (businessDetails?.branches as any[])?.[0]?.state;
+      
+      return await competitorDataService.getTopCompetitors(
+        selectedScope as ScopeType,
+        userCity,
+        userState,
+        15
+      );
     }
   });
 
@@ -101,23 +130,27 @@ export const EnhancedMarketPulseModal = ({ open, onOpenChange }: EnhancedMarketP
 
       for (const competitor of competitorsData) {
         try {
-          // ML-based scoring
-          const features = FeatureEngineer.extractFeatures(competitor);
+          // ML-based scoring using competitor_name as key
+          const features = FeatureEngineer.extractFeatures({
+            ...competitor,
+            business_name: competitor.competitor_name,
+            id: competitor.competitor_name
+          });
           const mlScore = mlScorer.predictWithConfidence(features);
-          newMlScores.set(competitor.id, {
+          newMlScores.set(competitor.competitor_name, {
             ...mlScore,
             features,
-            competitor: competitor.business_name
+            competitor: competitor.competitor_name
           });
 
           // Sentiment analysis
           const sentimentReport = await sentimentAnalyzer.generateBrandSentimentReport(
-            competitor.business_name,
-            competitorsData.map(c => c.business_name).filter(name => name !== competitor.business_name)
+            competitor.competitor_name,
+            competitorsData.map(c => c.competitor_name).filter(name => name !== competitor.competitor_name)
           );
-          newSentimentReports.set(competitor.id, sentimentReport);
+          newSentimentReports.set(competitor.competitor_name, sentimentReport);
         } catch (error) {
-          console.error(`Analysis failed for ${competitor.business_name}:`, error);
+          console.error(`Analysis failed for ${competitor.competitor_name}:`, error);
         }
       }
 
