@@ -383,7 +383,8 @@ class AIMemorySystem {
         accessCount: 0,
         lastAccessed: new Date().toISOString(),
         createdAt: new Date().toISOString(),
-        tags: ['successful-interaction']
+        tags: ['successful-interaction'],
+        relationships: []
       });
     }
   }

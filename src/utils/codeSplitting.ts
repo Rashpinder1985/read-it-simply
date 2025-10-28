@@ -1,6 +1,8 @@
 // Code Splitting and Dynamic Import Utilities
 // Implements intelligent chunking and lazy loading for optimal performance
 
+import React from 'react';
+
 export interface ChunkConfig {
   name: string;
   modules: string[];
@@ -63,7 +65,7 @@ class CodeSplittingManager {
   // Dynamically import a module with error handling
   async dynamicImport<T>(modulePath: string): Promise<T> {
     try {
-      const module = await import(/* @vite-ignore */ modulePath);
+      const module = await import(modulePath);
       return module.default || module;
     } catch (error) {
       console.error(`Failed to load module ${modulePath}:`, error);

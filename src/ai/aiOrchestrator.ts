@@ -57,6 +57,7 @@ export interface AIInsight {
   timeframe: 'immediate' | 'short-term' | 'long-term';
   actionable: boolean;
   relatedData: string[];
+  timestamp?: string;
 }
 
 class AIOrchestrator {

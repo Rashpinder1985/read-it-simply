@@ -7,7 +7,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
   ResponsiveContainer, Legend, Area, AreaChart, BarChart, Bar, PieChart, Pie, 
   Cell, ScatterChart, Scatter, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
-  Radar, HeatmapGrid, Treemap
+  Radar, Treemap
 } from 'recharts';
 import { TrendingUp, TrendingDown, ExternalLink, Brain, Zap, Target, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

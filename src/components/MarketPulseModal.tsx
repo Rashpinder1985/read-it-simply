@@ -40,6 +40,23 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedScope, setSelectedScope] = useState<'local' | 'regional' | 'national' | 'international'>('national');
 
+  // Fetch business details first
+  const { data: businessDetails } = useQuery({
+    queryKey: ['business-details'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('business_details')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Fetch competitors from the new table
   const { data: competitorsData } = useQuery({
     queryKey: ['competitors', selectedScope, businessDetails],
@@ -101,22 +118,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
         .from('market_data')
         .select('*')
         .order('timestamp', { ascending: false });
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: businessDetails } = useQuery({
-    queryKey: ['business-details'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from('business_details')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
       if (error) throw error;
       return data;
     }
