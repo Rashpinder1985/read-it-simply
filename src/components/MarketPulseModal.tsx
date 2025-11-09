@@ -94,74 +94,117 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
   const goldChange = currentGoldRate > 7450 ? '+2.3%' : '-1.2%';
   const isPositive = currentGoldRate > 7450;
 
+  const getThreatLevel = (competitor: any) => {
+    if (selectedScope === 'local' && competitor.city === userCity) return 'IMMEDIATE';
+    if (selectedScope === 'regional' && competitor.state === userState) return 'HIGH';
+    if (selectedScope === 'national') return 'MEDIUM';
+    return 'LOW';
+  };
+
+  const getThreatBadgeVariant = (level: string) => {
+    switch(level) {
+      case 'IMMEDIATE': return 'destructive';
+      case 'HIGH': return 'default';
+      case 'MEDIUM': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
   const renderCompetitorCards = (filteredCompetitors: any[]) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {filteredCompetitors.slice(0, 12).map((competitor: any, index: number) => (
-        <Card key={index} className="p-4 hover:shadow-lg transition-shadow">
-          <div className="space-y-3">
-            <div className="flex items-start justify-between">
-              <h4 className="font-bold text-sm line-clamp-2">{competitor.competitor_name}</h4>
-              <Badge variant={
-                competitor.market_presence_label === 'High' ? 'default' :
-                competitor.market_presence_label === 'Medium' ? 'secondary' : 'outline'
-              }>
-                {competitor.market_presence_label}
-              </Badge>
-            </div>
-            
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p className="flex items-center gap-1">
-                <span className="font-medium">Location:</span> {competitor.city}, {competitor.state}
-              </p>
-              <p className="flex items-center gap-1">
-                <span className="font-medium">Metal:</span>
+      {filteredCompetitors.slice(0, 12).map((competitor: any, index: number) => {
+        const threatLevel = getThreatLevel(competitor);
+        return (
+          <Card key={index} className="p-4 hover:shadow-lg transition-shadow border-l-4" style={{
+            borderLeftColor: threatLevel === 'IMMEDIATE' ? 'hsl(var(--destructive))' : 
+                           threatLevel === 'HIGH' ? 'hsl(var(--primary))' : 
+                           threatLevel === 'MEDIUM' ? 'hsl(var(--secondary))' : 'hsl(var(--border))'
+          }}>
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="font-bold text-sm line-clamp-2 flex-1">{competitor.competitor_name}</h4>
+                <Badge variant={getThreatBadgeVariant(threatLevel)} className="text-xs shrink-0">
+                  {threatLevel}
+                </Badge>
+              </div>
+              
+              <div className="flex flex-wrap gap-1">
                 <Badge variant="outline" className="text-xs">{competitor.metal}</Badge>
-              </p>
-              <p className="flex items-center gap-1">
-                <span className="font-medium">Price:</span> {competitor.price_positioning}
-              </p>
-            </div>
-            
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="text-xs">
-                <span className="font-bold text-accent">{competitor.rating_avg || 'N/A'}</span>
-                <span className="text-muted-foreground"> / 5.0</span>
+                <Badge variant="outline" className="text-xs">{competitor.use_category}</Badge>
+                <Badge variant="outline" className="text-xs">{competitor.business_type}</Badge>
+                <Badge variant={
+                  competitor.market_presence_label === 'High' ? 'default' :
+                  competitor.market_presence_label === 'Medium' ? 'secondary' : 'outline'
+                } className="text-xs">
+                  {competitor.market_presence_label}
+                </Badge>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {competitor.review_count || 0} reviews
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p className="flex items-center gap-1">
+                  <span className="font-medium">Location:</span> {competitor.locality}, {competitor.city}
+                </p>
+                <p className="flex items-center gap-1">
+                  <span className="font-medium">Region:</span> {competitor.region}
+                </p>
+                <p className="flex items-center gap-1">
+                  <span className="font-medium">Price:</span> {competitor.price_positioning}
+                </p>
               </div>
+              
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="text-xs">
+                  <span className="font-bold text-accent">{competitor.rating_avg || 'N/A'}</span>
+                  <span className="text-muted-foreground"> / 5.0</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {competitor.review_count || 0} reviews
+                </div>
+              </div>
+
+              {competitor.instagram_handle && (
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Instagram:</span> @{competitor.instagram_handle}
+                </div>
+              )}
             </div>
-          </div>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 
-  const renderMarketPresenceHistogram = (filteredCompetitors: any[], title: string) => (
-    <Card className="p-6">
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground mb-4">Compare ratings and reviews based on actual data</p>
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart
-          data={filteredCompetitors.slice(0, 15).map((c: any) => ({
-            name: c.competitor_name.length > 15 ? c.competitor_name.substring(0, 13) + '...' : c.competitor_name,
-            rating: c.rating_avg || 0,
-            reviews: c.review_count || 0,
-          }))}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-          <YAxis yAxisId="left" orientation="left" stroke="#8884d8" label={{ value: 'Rating (0-5)', angle: -90, position: 'insideLeft' }} />
-          <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" label={{ value: 'Reviews', angle: 90, position: 'insideRight' }} />
-          <ChartTooltip />
-          <Legend />
-          <Bar yAxisId="left" dataKey="rating" fill="#8884d8" name="Avg Rating" />
-          <Bar yAxisId="right" dataKey="reviews" fill="#82ca9d" name="Review Count" />
-        </BarChart>
-      </ResponsiveContainer>
-    </Card>
-  );
+  const renderMarketPresenceHistogram = (filteredCompetitors: any[], title: string) => {
+    const sortedCompetitors = [...filteredCompetitors]
+      .sort((a, b) => (b.rating_avg || 0) - (a.rating_avg || 0))
+      .slice(0, 15);
+
+    return (
+      <Card className="p-6">
+        <h3 className="text-xl font-bold mb-2">{title}</h3>
+        <p className="text-sm text-muted-foreground mb-4">Top competitors by rating and review volume (real JustDial data)</p>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart
+            data={sortedCompetitors.map((c: any) => ({
+              name: c.competitor_name.length > 15 ? c.competitor_name.substring(0, 13) + '...' : c.competitor_name,
+              rating: c.rating_avg || 0,
+              reviews: c.review_count || 0,
+            }))}
+            margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+            <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--primary))" label={{ value: 'Rating (0-5)', angle: -90, position: 'insideLeft' }} />
+            <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--accent))" label={{ value: 'Reviews', angle: 90, position: 'insideRight' }} />
+            <ChartTooltip />
+            <Legend />
+            <Bar yAxisId="left" dataKey="rating" fill="hsl(var(--primary))" name="Avg Rating" />
+            <Bar yAxisId="right" dataKey="reviews" fill="hsl(var(--accent))" name="Review Count" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
