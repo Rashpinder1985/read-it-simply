@@ -77,6 +77,47 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
     }
   });
 
+  // Fetch trend data
+  const { data: geographicHotspots } = useQuery({
+    queryKey: ['geographic-hotspots'],
+    queryFn: async () => {
+      return await competitorDataService.getGeographicExpansionHotspots(10);
+    }
+  });
+
+  const { data: categoryMomentum } = useQuery({
+    queryKey: ['category-momentum'],
+    queryFn: async () => {
+      return await competitorDataService.getCategoryMomentum();
+    }
+  });
+
+  const { data: risingCompetitors } = useQuery({
+    queryKey: ['rising-competitors', selectedScope, userCity, userState],
+    queryFn: async () => {
+      return await competitorDataService.getRisingCompetitors(
+        selectedScope as ScopeType,
+        userCity,
+        userState,
+        10
+      );
+    }
+  });
+
+  const { data: metalTrends } = useQuery({
+    queryKey: ['metal-trends'],
+    queryFn: async () => {
+      return await competitorDataService.getMetalTrends();
+    }
+  });
+
+  const { data: businessTypeTrends } = useQuery({
+    queryKey: ['business-type-trends'],
+    queryFn: async () => {
+      return await competitorDataService.getBusinessTypeTrends();
+    }
+  });
+
   const { data: marketData } = useQuery({
     queryKey: ['market-data'],
     queryFn: async () => {
@@ -446,12 +487,13 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             </div>
           </Card>
 
-          {/* Hierarchical Tabs: Local -> Regional -> National */}
+          {/* Hierarchical Tabs: Local -> Regional -> National -> Trends */}
           <Tabs value={selectedScope} onValueChange={(value) => setSelectedScope(value as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="local">Local Competitors</TabsTrigger>
               <TabsTrigger value="regional">Regional Market</TabsTrigger>
               <TabsTrigger value="national">National Players</TabsTrigger>
+              <TabsTrigger value="trends">Emerging Trends</TabsTrigger>
             </TabsList>
 
             {/* Local Competitors Tab */}
@@ -575,6 +617,168 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                   </PieChart>
                 </ResponsiveContainer>
               </Card>
+            </TabsContent>
+
+            {/* Emerging Trends Tab */}
+            <TabsContent value="trends" className="space-y-6 mt-6">
+              <p className="text-muted-foreground mb-4">Discover emerging patterns and opportunities across the jewellery market</p>
+
+              {/* Geographic Expansion Hotspots */}
+              <Card className="p-6 bg-gradient-to-br from-accent/10 to-primary/5">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <TrendingUp className="h-6 w-6 text-accent" />
+                  Geographic Expansion Hotspots
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">Cities with highest market activity and growth potential</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(geographicHotspots || []).map((hotspot: any, idx: number) => (
+                    <Card key={idx} className="p-4 border-l-4" style={{
+                      borderLeftColor: hotspot.trend === 'HOT' ? 'hsl(var(--destructive))' : 
+                                     hotspot.trend === 'GROWING' ? 'hsl(var(--primary))' : 'hsl(var(--accent))'
+                    }}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-bold">{hotspot.city}, {hotspot.state}</h4>
+                          <Badge variant={
+                            hotspot.trend === 'HOT' ? 'destructive' : 
+                            hotspot.trend === 'GROWING' ? 'default' : 'secondary'
+                          } className="mt-1">
+                            {hotspot.trend}
+                          </Badge>
+                        </div>
+                        <div className="text-right text-sm">
+                          <p className="font-bold text-primary">{hotspot.competitorCount}</p>
+                          <p className="text-xs text-muted-foreground">competitors</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs mt-3 pt-3 border-t">
+                        <div>
+                          <p className="text-muted-foreground">Avg Rating</p>
+                          <p className="font-semibold">{hotspot.avgRating.toFixed(1)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Reviews</p>
+                          <p className="font-semibold">{hotspot.totalReviews.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">High Presence</p>
+                          <p className="font-semibold">{hotspot.highPresence}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Category Momentum */}
+              <Card className="p-6">
+                <h3 className="text-xl font-bold mb-4">Category Momentum Analysis</h3>
+                <p className="text-sm text-muted-foreground mb-4">Use categories with highest market activity and ratings</p>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={categoryMomentum || []} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" angle={-45} textAnchor="end" height={80} />
+                    <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--primary))" label={{ value: 'Competitors', angle: -90, position: 'insideLeft' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--accent))" label={{ value: 'Avg Rating', angle: 90, position: 'insideRight' }} />
+                    <ChartTooltip />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="competitorCount" fill="hsl(var(--primary))" name="Competitor Count" />
+                    <Bar yAxisId="right" dataKey="avgRating" fill="hsl(var(--accent))" name="Avg Rating" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+
+              {/* Rising Competitors */}
+              <Card className="p-6 bg-gradient-to-br from-primary/5 to-accent/10">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                  Rising Competitors - {selectedScope.charAt(0).toUpperCase() + selectedScope.slice(1)}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">High-performing competitors with strong growth momentum</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(risingCompetitors || []).map((comp: any, idx: number) => (
+                    <Card key={idx} className="p-4 border-l-4" style={{
+                      borderLeftColor: comp.threat === 'IMMEDIATE' ? 'hsl(var(--destructive))' : 
+                                     comp.threat === 'HIGH' ? 'hsl(var(--primary))' : 'hsl(var(--accent))'
+                    }}>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-bold text-sm line-clamp-2 flex-1">{comp.competitor_name}</h4>
+                          <Badge variant={
+                            comp.threat === 'IMMEDIATE' ? 'destructive' : 
+                            comp.threat === 'HIGH' ? 'default' : 'secondary'
+                          } className="text-xs shrink-0 ml-2">
+                            {comp.threat}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-1 flex-wrap">
+                          <Badge variant="outline" className="text-xs">{comp.metal}</Badge>
+                          <Badge variant="outline" className="text-xs">{comp.use_category}</Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <p>{comp.city}, {comp.state}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t text-xs">
+                          <div>
+                            <p className="text-muted-foreground">Rating</p>
+                            <p className="font-bold text-accent">{comp.rating_avg.toFixed(1)}/5.0</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Reviews</p>
+                            <p className="font-bold">{comp.review_count.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Metal & Business Type Trends */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Metal Trends */}
+                <Card className="p-6">
+                  <h3 className="text-xl font-bold mb-4">Metal Specialization Trends</h3>
+                  <div className="space-y-3">
+                    {(metalTrends || []).map((trend: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-semibold">{trend.metal}</p>
+                          <p className="text-xs text-muted-foreground">Avg Rating: {trend.avgRating.toFixed(1)}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant={
+                            trend.trendStrength === 'DOMINANT' ? 'default' :
+                            trend.trendStrength === 'STRONG' ? 'secondary' : 'outline'
+                          }>
+                            {trend.trendStrength}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground mt-1">{trend.competitorCount} players</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Business Type Trends */}
+                <Card className="p-6">
+                  <h3 className="text-xl font-bold mb-4">Business Type Distribution</h3>
+                  <div className="space-y-3">
+                    {(businessTypeTrends || []).map((trend: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-semibold">{trend.businessType}</p>
+                          <p className="text-xs text-muted-foreground">Avg Rating: {trend.avgRating.toFixed(1)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">{trend.marketShare}%</p>
+                          <p className="text-xs text-muted-foreground">{trend.competitorCount} businesses</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

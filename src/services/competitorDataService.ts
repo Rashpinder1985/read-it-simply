@@ -241,6 +241,153 @@ class CompetitorDataService {
     if (totalReviews === 0) return 0;
     return ((competitor.review_count || 0) / totalReviews) * 100;
   }
+
+  async getGeographicExpansionHotspots(limit = 10) {
+    await this.initialize();
+    
+    const cityStats = this.data.reduce((acc, comp) => {
+      const key = `${comp.city}, ${comp.state}`;
+      if (!acc[key]) {
+        acc[key] = {
+          city: comp.city,
+          state: comp.state,
+          competitorCount: 0,
+          avgRating: 0,
+          totalReviews: 0,
+          highPresence: 0,
+          ratings: [] as number[]
+        };
+      }
+      acc[key].competitorCount++;
+      acc[key].totalReviews += (comp.review_count || 0);
+      acc[key].ratings.push(comp.rating_avg || 0);
+      if (comp.market_presence_label === 'High') acc[key].highPresence++;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(cityStats)
+      .map((stat: any) => ({
+        ...stat,
+        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
+        activityScore: stat.competitorCount * 0.4 + stat.totalReviews * 0.0001 + stat.avgRating * 10 + stat.highPresence * 5,
+        trend: stat.competitorCount > 15 ? 'HOT' : stat.competitorCount > 8 ? 'GROWING' : 'EMERGING'
+      }))
+      .sort((a, b) => b.activityScore - a.activityScore)
+      .slice(0, limit);
+  }
+
+  async getCategoryMomentum() {
+    await this.initialize();
+    
+    const categoryStats = this.data.reduce((acc, comp) => {
+      if (!acc[comp.use_category]) {
+        acc[comp.use_category] = {
+          category: comp.use_category,
+          competitorCount: 0,
+          avgRating: 0,
+          totalReviews: 0,
+          highPresence: 0,
+          ratings: [] as number[]
+        };
+      }
+      acc[comp.use_category].competitorCount++;
+      acc[comp.use_category].totalReviews += (comp.review_count || 0);
+      acc[comp.use_category].ratings.push(comp.rating_avg || 0);
+      if (comp.market_presence_label === 'High') acc[comp.use_category].highPresence++;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(categoryStats)
+      .map((stat: any) => ({
+        ...stat,
+        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
+        momentumScore: stat.competitorCount * 0.3 + stat.avgRating * 15 + stat.highPresence * 8,
+        strength: stat.competitorCount > 20 ? 'VERY HIGH' : stat.competitorCount > 10 ? 'HIGH' : stat.competitorCount > 5 ? 'MEDIUM' : 'LOW'
+      }))
+      .sort((a, b) => b.momentumScore - a.momentumScore);
+  }
+
+  async getRisingCompetitors(scope: ScopeType, userCity?: string, userState?: string, limit = 10) {
+    const competitors = await this.getCompetitorsByScope(scope, userCity, userState);
+    
+    return competitors
+      .filter(c => (c.rating_avg || 0) >= 4.0 && (c.review_count || 0) > 50)
+      .map(comp => ({
+        ...comp,
+        growthScore: (comp.rating_avg || 0) * 15 + Math.log10((comp.review_count || 1) + 1) * 25,
+        ratingQuality: comp.rating_avg || 0,
+        reviewMomentum: comp.review_count || 0,
+        threat: this.calculateThreatLevel(comp, scope, userCity, userState)
+      }))
+      .sort((a, b) => b.growthScore - a.growthScore)
+      .slice(0, limit);
+  }
+
+  private calculateThreatLevel(competitor: CompetitorData, scope: ScopeType, userCity?: string, userState?: string): 'IMMEDIATE' | 'HIGH' | 'MEDIUM' | 'LOW' {
+    if (scope === 'local' && competitor.city === userCity) return 'IMMEDIATE';
+    if (scope === 'regional' && competitor.state === userState) return 'HIGH';
+    if ((competitor.rating_avg || 0) > 4.5 && (competitor.review_count || 0) > 200) return 'HIGH';
+    if ((competitor.rating_avg || 0) > 4.0 && (competitor.review_count || 0) > 100) return 'MEDIUM';
+    return 'LOW';
+  }
+
+  async getMetalTrends() {
+    await this.initialize();
+    
+    const metalStats = this.data.reduce((acc, comp) => {
+      if (!acc[comp.metal]) {
+        acc[comp.metal] = {
+          metal: comp.metal,
+          competitorCount: 0,
+          avgRating: 0,
+          totalReviews: 0,
+          highPresence: 0,
+          ratings: [] as number[]
+        };
+      }
+      acc[comp.metal].competitorCount++;
+      acc[comp.metal].totalReviews += (comp.review_count || 0);
+      acc[comp.metal].ratings.push(comp.rating_avg || 0);
+      if (comp.market_presence_label === 'High') acc[comp.metal].highPresence++;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(metalStats)
+      .map((stat: any) => ({
+        ...stat,
+        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
+        trendStrength: stat.competitorCount > 30 ? 'DOMINANT' : stat.competitorCount > 15 ? 'STRONG' : stat.competitorCount > 5 ? 'MODERATE' : 'NICHE'
+      }))
+      .sort((a, b) => b.competitorCount - a.competitorCount);
+  }
+
+  async getBusinessTypeTrends() {
+    await this.initialize();
+    
+    const typeStats = this.data.reduce((acc, comp) => {
+      if (!acc[comp.business_type]) {
+        acc[comp.business_type] = {
+          businessType: comp.business_type,
+          competitorCount: 0,
+          avgRating: 0,
+          totalReviews: 0,
+          ratings: [] as number[]
+        };
+      }
+      acc[comp.business_type].competitorCount++;
+      acc[comp.business_type].totalReviews += (comp.review_count || 0);
+      acc[comp.business_type].ratings.push(comp.rating_avg || 0);
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(typeStats)
+      .map((stat: any) => ({
+        ...stat,
+        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
+        marketShare: ((stat.competitorCount / this.data.length) * 100).toFixed(1)
+      }))
+      .sort((a, b) => b.competitorCount - a.competitorCount);
+  }
 }
 
 export const competitorDataService = new CompetitorDataService();
