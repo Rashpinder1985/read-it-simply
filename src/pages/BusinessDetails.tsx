@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Upload } from "lucide-react";
 
@@ -46,6 +47,11 @@ export default function BusinessDetails() {
   const [segments, setSegments] = useState<Segment[]>([{ category: "", subcategories: [""] }]);
   const [socialMedia, setSocialMedia] = useState<SocialMedia>({});
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  
+  // Dropdown options from MarketPulse database
+  const [cities, setCities] = useState<Array<{city: string, state: string}>>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [subcategoryOptions, setSubcategoryOptions] = useState<string[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,8 +59,49 @@ export default function BusinessDetails() {
     } else if (user) {
       fetchBusinessDetails();
       fetchMediaFiles();
+      fetchMarketPlaceData();
     }
   }, [user, authLoading, navigate]);
+
+  const fetchMarketPlaceData = async () => {
+    try {
+      // Fetch unique cities and states from competitor_locations
+      const { data: locationData } = await supabase
+        .from("competitor_locations")
+        .select("city, state")
+        .order("state")
+        .order("city");
+
+      if (locationData) {
+        // Remove duplicates
+        const uniqueLocations = Array.from(
+          new Map(locationData.map(item => [`${item.city}-${item.state}`, item])).values()
+        );
+        setCities(uniqueLocations);
+      }
+
+      // Fetch unique categories from competitors
+      const { data: categoryData } = await supabase
+        .from("competitors")
+        .select("use_category, metal, business_type")
+        .not("use_category", "is", null);
+
+      if (categoryData) {
+        const uniqueCategories = [...new Set(categoryData.map(c => c.use_category))];
+        setCategories(uniqueCategories.filter(Boolean).sort());
+        
+        // Common jewellery subcategories
+        const subcats = [
+          "Gold Jewellery", "Diamond Jewellery", "Silver Jewellery", 
+          "Platinum Jewellery", "Bridal Sets", "Temple Jewellery",
+          "Contemporary Designs", "Custom Design", "Repairs & Alterations"
+        ];
+        setSubcategoryOptions(subcats);
+      }
+    } catch (error) {
+      console.error("Error fetching marketplace data:", error);
+    }
+  };
 
   const fetchBusinessDetails = async () => {
     if (!user) return;
@@ -160,6 +207,7 @@ export default function BusinessDetails() {
     setLoading(true);
 
     try {
+      // Save to business_details table
       const { error } = await supabase
         .from("business_details")
         .upsert({
@@ -174,6 +222,33 @@ export default function BusinessDetails() {
         });
 
       if (error) throw error;
+
+      // Also save to businesses table for MarketPulse
+      // Extract city and state from first branch or headquarters address
+      const hqCity = branches[0]?.city || "";
+      const hqState = branches[0]?.state || "";
+      const primaryCategory = segments[0]?.category || "Jewellery";
+
+      const { error: businessError } = await supabase
+        .from("businesses")
+        .upsert({
+          user_id: user.id,
+          business_name: companyName,
+          hq_city: hqCity,
+          hq_state: hqState,
+          primary_category: primaryCategory,
+          target_segment: segments[0]?.subcategories?.join(", ") || null,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (businessError) {
+        console.error("Error saving to businesses table:", businessError);
+        toast.error(`Business sync failed: ${businessError.message}`);
+        // Show the error to help debug
+      } else {
+        console.log("Successfully saved to businesses table for MarketPulse");
+      }
 
       toast.success("Business details saved successfully");
       navigate("/");
@@ -265,27 +340,78 @@ export default function BusinessDetails() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>City</Label>
-                    <Input
+                    <Select
                       value={branch.city}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const newBranches = [...branches];
-                        newBranches[index].city = e.target.value;
+                        newBranches[index].city = value;
+                        // Auto-fill state when city is selected
+                        const selectedLocation = cities.find(c => c.city === value);
+                        if (selectedLocation) {
+                          newBranches[index].state = selectedLocation.state;
+                        }
                         setBranches(newBranches);
                       }}
-                      placeholder="City"
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select city" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cities.map((location, idx) => (
+                          <SelectItem key={idx} value={location.city}>
+                            {location.city}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="Other">Other (Manual Entry)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {branch.city === "Other" && (
+                      <Input
+                        className="mt-2"
+                        value={branch.city === "Other" ? "" : branch.city}
+                        onChange={(e) => {
+                          const newBranches = [...branches];
+                          newBranches[index].city = e.target.value;
+                          setBranches(newBranches);
+                        }}
+                        placeholder="Enter city name"
+                      />
+                    )}
                   </div>
                   <div>
                     <Label>State</Label>
-                    <Input
+                    <Select
                       value={branch.state}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const newBranches = [...branches];
-                        newBranches[index].state = e.target.value;
+                        newBranches[index].state = value;
                         setBranches(newBranches);
                       }}
-                      placeholder="State"
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[...new Set(cities.map(c => c.state))].map((state, idx) => (
+                          <SelectItem key={idx} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="Other">Other (Manual Entry)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {branch.state === "Other" && (
+                      <Input
+                        className="mt-2"
+                        value={branch.state === "Other" ? "" : branch.state}
+                        onChange={(e) => {
+                          const newBranches = [...branches];
+                          newBranches[index].state = e.target.value;
+                          setBranches(newBranches);
+                        }}
+                        placeholder="Enter state name"
+                      />
+                    )}
                   </div>
                 </div>
                 <div>
@@ -326,29 +452,76 @@ export default function BusinessDetails() {
                 </div>
                 <div>
                   <Label>Category</Label>
-                  <Input
+                  <Select
                     value={segment.category}
-                    onChange={(e) => {
+                    onValueChange={(value) => {
                       const newSegments = [...segments];
-                      newSegments[segmentIndex].category = e.target.value;
+                      newSegments[segmentIndex].category = value;
                       setSegments(newSegments);
                     }}
-                    placeholder="e.g., Retail, Technology"
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat, idx) => (
+                        <SelectItem key={idx} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="Jewellery">Jewellery (General)</SelectItem>
+                      <SelectItem value="Other">Other (Manual Entry)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {segment.category === "Other" && (
+                    <Input
+                      className="mt-2"
+                      value={segment.category === "Other" ? "" : segment.category}
+                      onChange={(e) => {
+                        const newSegments = [...segments];
+                        newSegments[segmentIndex].category = e.target.value;
+                        setSegments(newSegments);
+                      }}
+                      placeholder="Enter custom category"
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Subcategories</Label>
                   {segment.subcategories.map((sub, subIndex) => (
                     <div key={subIndex} className="flex gap-2">
-                      <Input
+                      <Select
                         value={sub}
-                        onChange={(e) => {
+                        onValueChange={(value) => {
                           const newSegments = [...segments];
-                          newSegments[segmentIndex].subcategories[subIndex] = e.target.value;
+                          newSegments[segmentIndex].subcategories[subIndex] = value;
                           setSegments(newSegments);
                         }}
-                        placeholder="e.g., E-commerce, Software"
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select subcategory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subcategoryOptions.map((subcat, idx) => (
+                            <SelectItem key={idx} value={subcat}>
+                              {subcat}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="Custom">Custom (Manual Entry)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {sub === "Custom" && (
+                        <Input
+                          className="mt-2"
+                          value={sub === "Custom" ? "" : sub}
+                          onChange={(e) => {
+                            const newSegments = [...segments];
+                            newSegments[segmentIndex].subcategories[subIndex] = e.target.value;
+                            setSegments(newSegments);
+                          }}
+                          placeholder="Enter custom subcategory"
+                        />
+                      )}
                       {segment.subcategories.length > 1 && (
                         <Button
                           variant="ghost"

@@ -1,4 +1,4 @@
-import Papa from 'papaparse';
+import { supabase } from "@/integrations/supabase/client";
 
 export interface CompetitorData {
   competitor_name: string;
@@ -17,63 +17,108 @@ export interface CompetitorData {
   review_count: number;
   market_presence_label: 'Low' | 'Medium' | 'High';
   snapshot_date: string;
+  store_count?: number;
+  category_match?: string;
+  social_score?: number;
 }
 
 export type ScopeType = 'local' | 'regional' | 'national' | 'international';
 
 class CompetitorDataService {
-  private data: CompetitorData[] = [];
-  private initialized = false;
 
-  async initialize() {
-    if (this.initialized) return;
-    
+  private async callEdgeFunction(functionName: string, params: Record<string, any> = {}) {
     try {
-      const response = await fetch('/src/data/jewellery_knowledge_base.csv');
-      const csvText = await response.text();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      // Use Supabase's built-in function invocation
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const url = `${supabaseUrl}/functions/v1/${functionName}`;
       
-      const result = Papa.parse<CompetitorData>(csvText, {
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
+      const queryString = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryString.append(key, String(value));
+        }
       });
-      
-      this.data = result.data;
-      this.initialized = true;
+
+      const fullUrl = queryString.toString() ? `${url}?${queryString.toString()}` : url;
+
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: `HTTP error! status: ${response.status}` }));
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      console.error('Failed to load competitor data:', error);
-      this.data = [];
+      console.error(`Error calling ${functionName}:`, error);
+      throw error;
     }
   }
 
   async getCompetitorsByScope(scope: ScopeType, userCity?: string, userState?: string): Promise<CompetitorData[]> {
-    await this.initialize();
-    
-    if (!this.data.length) return [];
+    try {
+      // Get business_id from MarketPulse businesses table
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('No user logged in');
+        return [];
+      }
 
-    switch (scope) {
-      case 'local':
-        // Filter by user's city
-        return this.data.filter(c => 
-          userCity && c.city.toLowerCase().includes(userCity.toLowerCase())
-        );
-      
-      case 'regional':
-        // Filter by user's state
-        return this.data.filter(c => 
-          userState && c.state.toLowerCase().includes(userState.toLowerCase())
-        );
-      
-      case 'national':
-        // All competitors in India (region: Pan-India)
-        return this.data.filter(c => c.region === 'Pan-India');
-      
-      case 'international':
-        // International competitors (for future expansion)
-        return this.data.filter(c => c.region !== 'Pan-India');
-      
-      default:
-        return this.data;
+      // Query the businesses table (for MarketPulse)
+      const { data: business, error: businessError } = await supabase
+        .from("businesses")
+        .select("id, business_name, hq_city, hq_state")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (businessError) {
+        console.error('Error fetching business:', businessError);
+        return [];
+      }
+
+      if (!business?.id) {
+        console.log('No business found for user. Please fill out Business Details form first.');
+        return [];
+      }
+
+      console.log('Found business:', business);
+
+      // Call dashboard endpoint for local/regional/national
+      if (scope === 'local' || scope === 'regional' || scope === 'national') {
+        const dashboardData = await this.callEdgeFunction('marketpulse-dashboard', {
+          business_id: business.id
+        });
+
+        if (scope === 'local') {
+          return dashboardData.localCompetitors || [];
+        } else if (scope === 'regional') {
+          return dashboardData.regionalCompetitors || [];
+        } else if (scope === 'national') {
+          return dashboardData.nationalCompetitors || [];
+        }
+      }
+
+      // For analytics endpoint (more detailed)
+      const analyticsData = await this.callEdgeFunction('marketpulse-analytics', {
+        business_id: business.id,
+        level: scope === 'international' ? 'national' : scope
+      });
+
+      return analyticsData.competitors || [];
+    } catch (error) {
+      console.error('Failed to load competitors:', error);
+      return [];
     }
   }
 
@@ -110,7 +155,7 @@ class CompetitorDataService {
     return Object.entries(metalCounts).map(([metal, count]) => ({
       metal,
       count,
-      percentage: ((count / competitors.length) * 100).toFixed(1)
+      percentage: competitors.length > 0 ? ((count / competitors.length) * 100).toFixed(1) : "0"
     }));
   }
 
@@ -129,16 +174,9 @@ class CompetitorDataService {
   }
 
   async getCityDistribution(scope: ScopeType, userState?: string) {
-    await this.initialize();
-    
-    let filtered = this.data;
-    if (scope === 'regional' && userState) {
-      filtered = this.data.filter(c => 
-        c.state.toLowerCase().includes(userState.toLowerCase())
-      );
-    }
+    const competitors = await this.getCompetitorsByScope(scope, undefined, userState);
 
-    const cityCounts = filtered.reduce((acc, comp) => {
+    const cityCounts = competitors.reduce((acc, comp) => {
       acc[comp.city] = (acc[comp.city] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -157,7 +195,9 @@ class CompetitorDataService {
       high: competitors.filter(c => c.market_presence_label === 'High').length,
       medium: competitors.filter(c => c.market_presence_label === 'Medium').length,
       low: competitors.filter(c => c.market_presence_label === 'Low').length,
-      avgRating: competitors.reduce((sum, c) => sum + (c.rating_avg || 0), 0) / competitors.length,
+      avgRating: competitors.length > 0 
+        ? competitors.reduce((sum, c) => sum + (c.rating_avg || 0), 0) / competitors.length 
+        : 0,
       totalReviews: competitors.reduce((sum, c) => sum + (c.review_count || 0), 0),
     };
 
@@ -175,7 +215,9 @@ class CompetitorDataService {
     return Object.entries(typeCounts).map(([type, count]) => ({
       type,
       count,
-      percentage: ((count / competitors.length) * 100).toFixed(1)
+      percentage: competitors.length > 0 
+        ? ((count / competitors.length) * 100).toFixed(1) 
+        : "0"
     }));
   }
 
@@ -198,9 +240,9 @@ class CompetitorDataService {
   }
 
   async getStateDistribution() {
-    await this.initialize();
+    const competitors = await this.getCompetitorsByScope('national');
     
-    const stateCounts = this.data.reduce((acc, comp) => {
+    const stateCounts = competitors.reduce((acc, comp) => {
       acc[comp.state] = (acc[comp.state] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -211,16 +253,16 @@ class CompetitorDataService {
   }
 
   async getCompetitorAnalysis(competitorName: string) {
-    await this.initialize();
+    const competitors = await this.getCompetitorsByScope('national');
     
-    const competitor = this.data.find(c => 
+    const competitor = competitors.find(c => 
       c.competitor_name.toLowerCase() === competitorName.toLowerCase()
     );
 
     if (!competitor) return null;
 
     // Find similar competitors
-    const similar = this.data.filter(c => 
+    const similar = competitors.filter(c => 
       c.city === competitor.city && 
       c.metal === competitor.metal &&
       c.competitor_name !== competitor.competitor_name
@@ -230,12 +272,12 @@ class CompetitorDataService {
       ...competitor,
       score: this.calculateCompetitorScore(competitor),
       similarCompetitors: similar.map(s => s.competitor_name),
-      marketShare: this.calculateMarketShare(competitor)
+      marketShare: this.calculateMarketShare(competitor, competitors)
     };
   }
 
-  private calculateMarketShare(competitor: CompetitorData): number {
-    const cityCompetitors = this.data.filter(c => c.city === competitor.city);
+  private calculateMarketShare(competitor: CompetitorData, allCompetitors: CompetitorData[]): number {
+    const cityCompetitors = allCompetitors.filter(c => c.city === competitor.city);
     const totalReviews = cityCompetitors.reduce((sum, c) => sum + (c.review_count || 0), 0);
     
     if (totalReviews === 0) return 0;
@@ -243,9 +285,9 @@ class CompetitorDataService {
   }
 
   async getGeographicExpansionHotspots(limit = 10) {
-    await this.initialize();
+    const competitors = await this.getCompetitorsByScope('national');
     
-    const cityStats = this.data.reduce((acc, comp) => {
+    const cityStats = competitors.reduce((acc, comp) => {
       const key = `${comp.city}, ${comp.state}`;
       if (!acc[key]) {
         acc[key] = {
@@ -268,7 +310,9 @@ class CompetitorDataService {
     return Object.values(cityStats)
       .map((stat: any) => ({
         ...stat,
-        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
+        avgRating: stat.ratings.length > 0 
+          ? stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length 
+          : 0,
         activityScore: stat.competitorCount * 0.4 + stat.totalReviews * 0.0001 + stat.avgRating * 10 + stat.highPresence * 5,
         trend: stat.competitorCount > 15 ? 'HOT' : stat.competitorCount > 8 ? 'GROWING' : 'EMERGING'
       }))
@@ -277,9 +321,9 @@ class CompetitorDataService {
   }
 
   async getCategoryMomentum() {
-    await this.initialize();
+    const competitors = await this.getCompetitorsByScope('national');
     
-    const categoryStats = this.data.reduce((acc, comp) => {
+    const categoryStats = competitors.reduce((acc, comp) => {
       if (!acc[comp.use_category]) {
         acc[comp.use_category] = {
           category: comp.use_category,
@@ -300,7 +344,9 @@ class CompetitorDataService {
     return Object.values(categoryStats)
       .map((stat: any) => ({
         ...stat,
-        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
+        avgRating: stat.ratings.length > 0
+          ? stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length
+          : 0,
         momentumScore: stat.competitorCount * 0.3 + stat.avgRating * 15 + stat.highPresence * 8,
         strength: stat.competitorCount > 20 ? 'VERY HIGH' : stat.competitorCount > 10 ? 'HIGH' : stat.competitorCount > 5 ? 'MEDIUM' : 'LOW'
       }))
@@ -332,9 +378,9 @@ class CompetitorDataService {
   }
 
   async getMetalTrends() {
-    await this.initialize();
+    const competitors = await this.getCompetitorsByScope('national');
     
-    const metalStats = this.data.reduce((acc, comp) => {
+    const metalStats = competitors.reduce((acc, comp) => {
       if (!acc[comp.metal]) {
         acc[comp.metal] = {
           metal: comp.metal,
@@ -355,16 +401,18 @@ class CompetitorDataService {
     return Object.values(metalStats)
       .map((stat: any) => ({
         ...stat,
-        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
+        avgRating: stat.ratings.length > 0
+          ? stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length
+          : 0,
         trendStrength: stat.competitorCount > 30 ? 'DOMINANT' : stat.competitorCount > 15 ? 'STRONG' : stat.competitorCount > 5 ? 'MODERATE' : 'NICHE'
       }))
       .sort((a, b) => b.competitorCount - a.competitorCount);
   }
 
   async getBusinessTypeTrends() {
-    await this.initialize();
+    const competitors = await this.getCompetitorsByScope('national');
     
-    const typeStats = this.data.reduce((acc, comp) => {
+    const typeStats = competitors.reduce((acc, comp) => {
       if (!acc[comp.business_type]) {
         acc[comp.business_type] = {
           businessType: comp.business_type,
@@ -383,10 +431,38 @@ class CompetitorDataService {
     return Object.values(typeStats)
       .map((stat: any) => ({
         ...stat,
-        avgRating: stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length,
-        marketShare: ((stat.competitorCount / this.data.length) * 100).toFixed(1)
+        avgRating: stat.ratings.length > 0
+          ? stat.ratings.reduce((sum: number, r: number) => sum + r, 0) / stat.ratings.length
+          : 0,
+        marketShare: competitors.length > 0 
+          ? ((stat.competitorCount / competitors.length) * 100).toFixed(1) 
+          : "0"
       }))
       .sort((a, b) => b.competitorCount - a.competitorCount);
+  }
+
+  // New methods for Edge Functions
+  async getNationalIntelligence(businessId: string) {
+    try {
+      return await this.callEdgeFunction('marketpulse-national-intel', {
+        business_id: businessId
+      });
+    } catch (error) {
+      console.error('Failed to load national intelligence:', error);
+      return null;
+    }
+  }
+
+  async getEmergingTrends(state?: string) {
+    try {
+      const params: Record<string, any> = {};
+      if (state) params.state = state;
+      
+      return await this.callEdgeFunction('marketpulse-trends', params);
+    } catch (error) {
+      console.error('Failed to load emerging trends:', error);
+      return null;
+    }
   }
 }
 
