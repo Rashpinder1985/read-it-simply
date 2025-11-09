@@ -65,29 +65,41 @@ export default function BusinessDetails() {
 
   const fetchMarketPlaceData = async () => {
     try {
+      console.log("🔍 Fetching marketplace data...");
+      
       // Fetch unique cities and states from competitor_locations
-      const { data: locationData } = await supabase
+      const { data: locationData, error: locError } = await supabase
         .from("competitor_locations")
         .select("city, state")
         .order("state")
         .order("city");
 
-      if (locationData) {
+      console.log("📍 Location data:", locationData);
+      console.log("❌ Location error:", locError);
+
+      if (locationData && locationData.length > 0) {
         // Remove duplicates
         const uniqueLocations = Array.from(
           new Map(locationData.map(item => [`${item.city}-${item.state}`, item])).values()
         );
+        console.log("✅ Setting cities:", uniqueLocations);
         setCities(uniqueLocations);
+      } else {
+        console.warn("⚠️ No location data found in database");
       }
 
       // Fetch unique categories from competitors
-      const { data: categoryData } = await supabase
+      const { data: categoryData, error: catError } = await supabase
         .from("competitors")
         .select("use_category, metal, business_type")
         .not("use_category", "is", null);
 
+      console.log("📦 Category data:", categoryData);
+      console.log("❌ Category error:", catError);
+
       if (categoryData) {
         const uniqueCategories = [...new Set(categoryData.map(c => c.use_category))];
+        console.log("✅ Setting categories:", uniqueCategories);
         setCategories(uniqueCategories.filter(Boolean).sort());
         
         // Common jewellery subcategories
@@ -99,7 +111,7 @@ export default function BusinessDetails() {
         setSubcategoryOptions(subcats);
       }
     } catch (error) {
-      console.error("Error fetching marketplace data:", error);
+      console.error("💥 Error fetching marketplace data:", error);
     }
   };
 
