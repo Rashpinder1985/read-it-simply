@@ -52,6 +52,7 @@ export default function BusinessDetails() {
   const [cities, setCities] = useState<Array<{city: string, state: string}>>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [subcategoryOptions, setSubcategoryOptions] = useState<string[]>([]);
+  const [companyNames, setCompanyNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -109,6 +110,21 @@ export default function BusinessDetails() {
           "Contemporary Designs", "Custom Design", "Repairs & Alterations"
         ];
         setSubcategoryOptions(subcats);
+      }
+
+      // Fetch company names from competitors
+      const { data: companyData, error: compError } = await supabase
+        .from("competitors")
+        .select("competitor_name")
+        .order("competitor_name");
+
+      console.log("🏢 Company names data:", companyData);
+      console.log("❌ Company error:", compError);
+
+      if (companyData) {
+        const uniqueCompanyNames = companyData.map(c => c.competitor_name).filter(Boolean);
+        console.log("✅ Setting company names:", uniqueCompanyNames.length);
+        setCompanyNames(uniqueCompanyNames);
       }
     } catch (error) {
       console.error("💥 Error fetching marketplace data:", error);
@@ -316,10 +332,19 @@ export default function BusinessDetails() {
               <Label htmlFor="companyName">Company Name *</Label>
               <Input
                 id="companyName"
+                list="companyNamesList"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Enter company name"
+                placeholder="Select or type company name"
               />
+              <datalist id="companyNamesList">
+                {companyNames.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground mt-1">
+                {companyNames.length} companies available in database
+              </p>
             </div>
             <div>
               <Label htmlFor="hqAddress">Headquarters Address</Label>
