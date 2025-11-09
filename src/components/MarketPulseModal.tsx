@@ -174,6 +174,187 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
     </div>
   );
 
+  const analyzeMarketPosition = (filteredCompetitors: any[], scopeLevel: string) => {
+    const total = filteredCompetitors.length;
+    const highPresence = filteredCompetitors.filter(c => c.market_presence_label === 'High').length;
+    const avgRating = filteredCompetitors.reduce((sum, c) => sum + (c.rating_avg || 0), 0) / total || 0;
+    const totalReviews = filteredCompetitors.reduce((sum, c) => sum + (c.review_count || 0), 0);
+
+    // Competition Level Assessment
+    let competitionLevel = 'LOW';
+    let competitionColor = 'hsl(var(--accent))';
+    if (total > 50) {
+      competitionLevel = 'VERY HIGH';
+      competitionColor = 'hsl(var(--destructive))';
+    } else if (total > 30) {
+      competitionLevel = 'HIGH';
+      competitionColor = 'hsl(var(--primary))';
+    } else if (total > 10) {
+      competitionLevel = 'MEDIUM';
+      competitionColor = 'hsl(var(--secondary))';
+    }
+
+    // Market Gap Analysis
+    const metalDistrib = filteredCompetitors.reduce((acc, c) => {
+      acc[c.metal] = (acc[c.metal] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const categoryDistrib = filteredCompetitors.reduce((acc, c) => {
+      acc[c.use_category] = (acc[c.use_category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const priceDistrib = filteredCompetitors.reduce((acc, c) => {
+      acc[c.price_positioning] = (acc[c.price_positioning] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Identify gaps (segments with < 3 competitors)
+    const gaps: { type: string; segment: string; count: number }[] = [];
+    
+    Object.entries(metalDistrib).forEach(([metal, count]) => {
+      if ((count as number) < 3) gaps.push({ type: 'Metal', segment: metal, count: count as number });
+    });
+    
+    Object.entries(categoryDistrib).forEach(([category, count]) => {
+      if ((count as number) < 3) gaps.push({ type: 'Category', segment: category, count: count as number });
+    });
+
+    Object.entries(priceDistrib).forEach(([price, count]) => {
+      if ((count as number) < 3) gaps.push({ type: 'Price', segment: price, count: count as number });
+    });
+
+    // Strategic Recommendations
+    const recommendations: { priority: 'HIGH' | 'MEDIUM' | 'LOW'; action: string }[] = [];
+
+    if (competitionLevel === 'LOW' || competitionLevel === 'MEDIUM') {
+      recommendations.push({
+        priority: 'HIGH',
+        action: `${scopeLevel} market is underserved. Strong opportunity to establish market leadership with aggressive marketing.`
+      });
+    }
+
+    if (highPresence > total * 0.6) {
+      recommendations.push({
+        priority: 'HIGH',
+        action: 'Market dominated by established players. Focus on differentiation and niche positioning.'
+      });
+    }
+
+    if (avgRating < 4.0) {
+      recommendations.push({
+        priority: 'HIGH',
+        action: 'Customer satisfaction is below industry standards. Opportunity to compete on service quality.'
+      });
+    }
+
+    gaps.forEach(gap => {
+      if (gap.count <= 1) {
+        recommendations.push({
+          priority: 'HIGH',
+          action: `${gap.type} gap: "${gap.segment}" segment is severely underserved. Blue ocean opportunity.`
+        });
+      } else if (gap.count === 2) {
+        recommendations.push({
+          priority: 'MEDIUM',
+          action: `${gap.type} opportunity: "${gap.segment}" has limited competition (${gap.count} players).`
+        });
+      }
+    });
+
+    if (recommendations.length === 0) {
+      recommendations.push({
+        priority: 'MEDIUM',
+        action: 'Market is well-balanced. Focus on operational excellence and customer retention.'
+      });
+    }
+
+    return {
+      total,
+      highPresence,
+      avgRating: avgRating.toFixed(1),
+      totalReviews,
+      competitionLevel,
+      competitionColor,
+      gaps: gaps.slice(0, 5),
+      recommendations: recommendations.slice(0, 4)
+    };
+  };
+
+  const renderMarketPositionAnalysis = (filteredCompetitors: any[], scopeLevel: string) => {
+    if (!filteredCompetitors.length) return null;
+
+    const analysis = analyzeMarketPosition(filteredCompetitors, scopeLevel);
+
+    return (
+      <Card className="p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20">
+        <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          Market Position Analysis - {scopeLevel}
+        </h3>
+
+        {/* Competition Level */}
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold mb-3">Competition Level</h4>
+          <div className="flex items-center gap-4">
+            <Badge 
+              className="text-lg px-4 py-2"
+              style={{ backgroundColor: analysis.competitionColor, color: 'white' }}
+            >
+              {analysis.competitionLevel}
+            </Badge>
+            <div className="text-sm text-muted-foreground">
+              {analysis.total} active competitors | {analysis.highPresence} with high market presence
+            </div>
+          </div>
+        </div>
+
+        {/* Market Gaps */}
+        {analysis.gaps.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold mb-3">Market Gaps Identified</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {analysis.gaps.map((gap, idx) => (
+                <Card key={idx} className="p-3 border-l-4 border-l-accent">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <Badge variant="outline" className="text-xs mb-1">{gap.type}</Badge>
+                      <p className="font-medium text-sm">{gap.segment}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{gap.count} competitors</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Strategic Recommendations */}
+        <div>
+          <h4 className="text-lg font-semibold mb-3">Strategic Recommendations</h4>
+          <div className="space-y-3">
+            {analysis.recommendations.map((rec, idx) => (
+              <Card key={idx} className="p-4 border-l-4" style={{
+                borderLeftColor: rec.priority === 'HIGH' ? 'hsl(var(--destructive))' : 
+                               rec.priority === 'MEDIUM' ? 'hsl(var(--primary))' : 'hsl(var(--secondary))'
+              }}>
+                <div className="flex items-start gap-3">
+                  <Badge variant={
+                    rec.priority === 'HIGH' ? 'destructive' : 
+                    rec.priority === 'MEDIUM' ? 'default' : 'secondary'
+                  } className="shrink-0">
+                    {rec.priority}
+                  </Badge>
+                  <p className="text-sm flex-1">{rec.action}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   const renderMarketPresenceHistogram = (filteredCompetitors: any[], title: string) => {
     const sortedCompetitors = [...filteredCompetitors]
       .sort((a, b) => (b.rating_avg || 0) - (a.rating_avg || 0))
@@ -277,6 +458,9 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             <TabsContent value="local" className="space-y-6 mt-6">
               <p className="text-muted-foreground mb-4">Competitors in your local market: {userCity || 'N/A'}</p>
               
+              {/* Market Position Analysis - Local */}
+              {renderMarketPositionAnalysis(competitors, 'Local')}
+
               {/* Competitor Cards Grid */}
               {renderCompetitorCards(competitors)}
 
@@ -315,6 +499,9 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             <TabsContent value="regional" className="space-y-6 mt-6">
               <p className="text-muted-foreground mb-4">Competitors across your region: {userState || 'N/A'}</p>
               
+              {/* Market Position Analysis - Regional */}
+              {renderMarketPositionAnalysis(competitors, 'Regional')}
+
               {/* Competitor Cards Grid - Regional */}
               {renderCompetitorCards(competitors)}
 
@@ -353,6 +540,9 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             <TabsContent value="national" className="space-y-6 mt-6">
               <p className="text-muted-foreground mb-4">Major national jewelry chains across India</p>
               
+              {/* Market Position Analysis - National */}
+              {renderMarketPositionAnalysis(competitors, 'National')}
+
               {/* Competitor Cards Grid - National */}
               {renderCompetitorCards(competitors)}
 
