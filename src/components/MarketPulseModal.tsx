@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { competitorDataService, type ScopeType } from "@/services/competitorDataService";
+import { GoldRatesCard } from "@/components/GoldRatesCard";
 
 interface MarketPulseModalProps {
   open: boolean;
@@ -118,22 +119,7 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
     }
   });
 
-  const { data: marketData } = useQuery({
-    queryKey: ['market-data'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('market_data')
-        .select('*')
-        .order('timestamp', { ascending: false });
-      if (error) throw error;
-      return data;
-    }
-  });
-
   const competitors = competitorsData || [];
-  const currentGoldRate = marketData?.[0]?.gold_price || 7500;
-  const goldChange = currentGoldRate > 7450 ? '+2.3%' : '-1.2%';
-  const isPositive = currentGoldRate > 7450;
 
   const getThreatLevel = (competitor: any) => {
     if (selectedScope === 'local' && competitor.city === userCity) return 'IMMEDIATE';
@@ -449,31 +435,8 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
             </Card>
           )}
 
-          {/* Gold Rate Ticker */}
-          <Card className="p-6 bg-gradient-to-r from-accent/10 to-primary/10 border-2 border-accent/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-accent/20 p-3 rounded-full">
-                  {isPositive ? (
-                    <TrendingUp className="h-8 w-8 text-accent" />
-                  ) : (
-                    <TrendingDown className="h-8 w-8 text-destructive" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-sm text-muted-foreground font-medium">LIVE GOLD RATE</h3>
-                  <p className="text-4xl font-bold text-foreground mt-1">₹{currentGoldRate.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">per gram (24K)</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <Badge variant={isPositive ? "default" : "destructive"} className="text-lg px-4 py-2">
-                  {goldChange}
-                </Badge>
-                <p className="text-xs text-muted-foreground mt-2">vs yesterday</p>
-              </div>
-            </div>
-          </Card>
+          {/* Live Gold Rates from IBJA */}
+          <GoldRatesCard />
 
           {/* Hierarchical Tabs: Local -> Regional -> National -> Trends */}
           <Tabs value={selectedScope} onValueChange={(value) => setSelectedScope(value as any)} className="w-full">
