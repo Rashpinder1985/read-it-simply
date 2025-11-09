@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import BusinessDetails from "./pages/BusinessDetails";
 import UserManagement from "./pages/UserManagement";
 import RoleAssignment from "./pages/RoleAssignment";
+import GoldRatesAdmin from "./pages/GoldRatesAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/business-details" element={<BusinessDetails />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/role-assignment" element={<RoleAssignment />} />
+          <Route path="/gold-rates-admin" element={<GoldRatesAdmin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
