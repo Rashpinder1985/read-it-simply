@@ -8,8 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { Loader2, Plus, Trash2, Upload, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Branch {
   city: string;
@@ -42,6 +45,7 @@ export default function BusinessDetails() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [companyNameOpen, setCompanyNameOpen] = useState(false);
   const [hqAddress, setHqAddress] = useState("");
   const [branches, setBranches] = useState<Branch[]>([{ city: "", state: "", address: "" }]);
   const [segments, setSegments] = useState<Segment[]>([{ category: "", subcategories: [""] }]);
@@ -330,18 +334,55 @@ export default function BusinessDetails() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="companyName">Company Name *</Label>
-              <Input
-                id="companyName"
-                list="companyNamesList"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Select or type company name"
-              />
-              <datalist id="companyNamesList">
-                {companyNames.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
+              <Popover open={companyNameOpen} onOpenChange={setCompanyNameOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={companyNameOpen}
+                    className="w-full justify-between"
+                  >
+                    {companyName || "Select or type company name"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search company name..." 
+                      value={companyName}
+                      onValueChange={setCompanyName}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <div className="py-2 px-4 text-sm text-muted-foreground">
+                          No company found. Type to add custom name.
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {companyNames.slice(0, 100).map((name) => (
+                          <CommandItem
+                            key={name}
+                            value={name}
+                            onSelect={(currentValue) => {
+                              setCompanyName(currentValue === companyName ? "" : currentValue);
+                              setCompanyNameOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                companyName === name ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground mt-1">
                 {companyNames.length} companies available in database
               </p>
