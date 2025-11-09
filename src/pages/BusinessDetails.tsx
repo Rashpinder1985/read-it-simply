@@ -332,59 +332,71 @@ export default function BusinessDetails() {
             <CardDescription>Basic details about your business</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="companyName">Company Name *</Label>
-              <Popover open={companyNameOpen} onOpenChange={setCompanyNameOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={companyNameOpen}
-                    className="w-full justify-between"
-                  >
-                    {companyName || "Select or type company name"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Search company name..." 
-                      value={companyName}
-                      onValueChange={setCompanyName}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        <div className="py-2 px-4 text-sm text-muted-foreground">
-                          No company found. Type to add custom name.
-                        </div>
-                      </CommandEmpty>
-                      <CommandGroup>
-                        {companyNames.slice(0, 100).map((name) => (
-                          <CommandItem
-                            key={name}
-                            value={name}
-                            onSelect={(currentValue) => {
-                              setCompanyName(currentValue === companyName ? "" : currentValue);
-                              setCompanyNameOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                companyName === name ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground mt-1">
-                {companyNames.length} companies available in database
+              <div className="flex gap-2">
+                <Popover open={companyNameOpen} onOpenChange={setCompanyNameOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={companyNameOpen}
+                      className="w-full justify-between text-left font-normal"
+                    >
+                      <span className={cn(!companyName && "text-muted-foreground")}>
+                        {companyName || "Select from database"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command shouldFilter={true}>
+                      <CommandInput placeholder="Search company name..." />
+                      <CommandList>
+                        <CommandEmpty>
+                          <div className="py-6 text-center text-sm">
+                            <p className="text-muted-foreground mb-2">No company found in database.</p>
+                            <p className="text-xs text-muted-foreground">Close this and use the input field to type your own.</p>
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {companyNames.map((name) => (
+                            <CommandItem
+                              key={name}
+                              value={name}
+                              onSelect={(selectedValue) => {
+                                // Find the exact match from companyNames (preserves case)
+                                const exactName = companyNames.find(
+                                  n => n.toLowerCase() === selectedValue.toLowerCase()
+                                );
+                                setCompanyName(exactName || selectedValue);
+                                setCompanyNameOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  companyName === name ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Input
+                id="companyName"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Or type your own company name"
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                Select from {companyNames.length} companies in database or type your own name above
               </p>
             </div>
             <div>
