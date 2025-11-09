@@ -188,9 +188,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
                 <p className="flex items-center gap-1">
                   <span className="font-medium">Region:</span> {competitor.region}
                 </p>
-                <p className="flex items-center gap-1">
-                  <span className="font-medium">Price:</span> {competitor.price_positioning}
-                </p>
               </div>
               
               <div className="flex items-center justify-between pt-2 border-t">
@@ -246,11 +243,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
       return acc;
     }, {} as Record<string, number>);
 
-    const priceDistrib = filteredCompetitors.reduce((acc, c) => {
-      acc[c.price_positioning] = (acc[c.price_positioning] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
     // Identify gaps (segments with < 3 competitors)
     const gaps: { type: string; segment: string; count: number }[] = [];
     
@@ -260,10 +252,6 @@ export const MarketPulseModal = ({ open, onOpenChange }: MarketPulseModalProps) 
     
     Object.entries(categoryDistrib).forEach(([category, count]) => {
       if ((count as number) < 3) gaps.push({ type: 'Category', segment: category, count: count as number });
-    });
-
-    Object.entries(priceDistrib).forEach(([price, count]) => {
-      if ((count as number) < 3) gaps.push({ type: 'Price', segment: price, count: count as number });
     });
 
     // Strategic Recommendations
