@@ -59,7 +59,7 @@ serve(async (req) => {
     const { email, role, fullName, password, companyName, brandName, industry, companySize }: CreateUserRequest = await req.json();
 
     // Validate role
-    const validRoles = ["admin", "marketing", "content", "assets"];
+    const validRoles = ["admin", "marketing", "content", "assets", "user"];
     if (!validRoles.includes(role)) {
       throw new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
     }
@@ -80,21 +80,6 @@ serve(async (req) => {
 
     if (createError) {
       throw createError;
-    }
-
-    // Update profile with additional fields
-    const { error: profileUpdateError } = await supabaseClient
-      .from("profiles")
-      .update({
-        company_name: companyName,
-        brand_name: brandName,
-        industry,
-        company_size: companySize,
-      })
-      .eq("id", newUser.user.id);
-
-    if (profileUpdateError) {
-      console.error("Failed to update profile:", profileUpdateError);
     }
 
     // Assign role to the user

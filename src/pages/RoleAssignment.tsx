@@ -104,11 +104,11 @@ const RoleAssignment = () => {
           <div className="space-y-2">
             <h3 className="font-semibold">Users to be created:</h3>
             <ul className="list-disc list-inside space-y-1">
-              <li>yogesh@digitaldogscorp.com - Admin</li>
-              <li>ambarish@digitaldogscorp.com - Admin</li>
-              <li>yogesh@digitaldogscorp.in - Marketing Manager</li>
-              <li>ambarish@digitaldogscorp.in - Content Editor</li>
-              <li>goldy13guri@gmail.com - Asset Manager</li>
+              <li>yogesh@digitaldogscorp.com - <strong>Admin</strong></li>
+              <li>ambarish@digitaldogscorp.com - <strong>Admin</strong></li>
+              <li>yogesh@digitaldogscorp.in - <strong>Marketing</strong> Manager</li>
+              <li>ambarish@digitaldogscorp.in - <strong>Content</strong> Manager</li>
+              <li>goldy13guri@gmail.com - <strong>Assets</strong> Manager</li>
             </ul>
           </div>
           <div className="p-4 bg-muted rounded-md">
