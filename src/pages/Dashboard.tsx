@@ -339,7 +339,7 @@ const Dashboard = () => {
         </div>
 
         {/* AI Assistant Integration */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatsCard
@@ -359,7 +359,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="lg:col-span-1">
-            <AIAssistant className="h-96" />
+            <AIAssistant />
           </div>
         </div>
 

@@ -161,8 +161,8 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ className }) => {
   }
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
+    <Card className={`${className} flex flex-col max-h-[600px]`}>
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
@@ -177,9 +177,9 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ className }) => {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-1 flex flex-col overflow-hidden">
         {/* Chat Messages */}
-        <ScrollArea className="h-96 w-full">
+        <ScrollArea className="flex-1 w-full min-h-0">
           <div className="space-y-4 pr-4">
             {messages.map((message) => (
               <div
@@ -248,43 +248,43 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ className }) => {
           </div>
         </ScrollArea>
 
-        <Separator />
+        <div className="flex-shrink-0 space-y-3 pt-2 border-t">
+          {/* Input Form */}
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask me about market trends, competitor analysis, or business insights..."
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={isLoading || !input.trim()}>
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
 
-        {/* Input Form */}
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask me about market trends, competitor analysis, or business insights..."
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={isLoading || !input.trim()}>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
-
-        {/* AI Stats */}
-        {aiStats && (
-          <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" />
-              <span>{aiStats.totalRequests} requests</span>
+          {/* AI Stats */}
+          {aiStats && (
+            <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <MessageSquare className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{aiStats.totalRequests} requests</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Brain className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{aiStats.memoryStats.totalMemories} memories</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{aiStats.insightCount} insights</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Brain className="h-3 w-3" />
-              <span>{aiStats.memoryStats.totalMemories} memories</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              <span>{aiStats.insightCount} insights</span>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
