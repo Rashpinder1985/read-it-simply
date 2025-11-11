@@ -36,11 +36,71 @@ const RoleAssignment = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const roleOptions = [
-    { value: "admin", label: "Admin", description: "Full access to all features", color: "bg-red-500" },
-    { value: "marketing", label: "Marketing Manager", description: "Manage marketing campaigns and content", color: "bg-blue-500" },
-    { value: "content", label: "Content Manager", description: "Create and manage content", color: "bg-purple-500" },
-    { value: "assets", label: "Assets Manager", description: "Manage media assets", color: "bg-green-500" },
-    { value: "user", label: "User", description: "Basic access", color: "bg-gray-500" },
+    { 
+      value: "admin", 
+      label: "Admin", 
+      description: "Full system access", 
+      color: "bg-red-500",
+      permissions: [
+        "✓ All Assets Manager permissions",
+        "✓ All Content Manager permissions", 
+        "✓ All Marketing Manager permissions",
+        "✓ Manage users (add, edit, delete)",
+        "✓ Assign roles to users",
+        "✓ Edit company/brand details",
+        "✓ System-wide settings"
+      ]
+    },
+    { 
+      value: "marketing", 
+      label: "Marketing Manager", 
+      description: "Marketing + Content + Assets", 
+      color: "bg-blue-500",
+      permissions: [
+        "✓ All Assets Manager permissions",
+        "✓ All Content Manager permissions",
+        "✓ Create market analysis",
+        "✓ Post content to social media",
+        "✓ Run marketing campaigns",
+        "✓ View detailed analytics",
+        "✓ Schedule content"
+      ]
+    },
+    { 
+      value: "content", 
+      label: "Content Manager", 
+      description: "Content approval + Assets", 
+      color: "bg-purple-500",
+      permissions: [
+        "✓ All Assets Manager permissions",
+        "✓ Approve/reject content",
+        "✓ Edit captions (WYSIWYG editor)",
+        "✓ Provide rejection reasons",
+        "✓ Manage content attachments"
+      ]
+    },
+    { 
+      value: "assets", 
+      label: "Assets Manager", 
+      description: "Media asset management", 
+      color: "bg-green-500",
+      permissions: [
+        "✓ Upload pictures & videos",
+        "✓ Delete unwanted assets",
+        "✓ Rename and organize assets",
+        "✓ Manage storage"
+      ]
+    },
+    { 
+      value: "user", 
+      label: "User", 
+      description: "Basic read-only access", 
+      color: "bg-gray-500",
+      permissions: [
+        "✓ View published content",
+        "✓ View basic analytics"
+      ]
+    },
   ];
 
   useEffect(() => {
@@ -226,6 +286,24 @@ const RoleAssignment = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  
+                  {/* Show permissions for selected role */}
+                  {newUserRole && (
+                    <Card className="p-4 bg-muted/50">
+                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Permissions for {roleOptions.find(r => r.value === newUserRole)?.label}
+                      </h4>
+                      <ul className="space-y-1">
+                        {roleOptions.find(r => r.value === newUserRole)?.permissions.map((perm, idx) => (
+                          <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                            <span className="text-green-600 mt-0.5">✓</span>
+                            <span>{perm.replace('✓ ', '')}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Card>
+                  )}
                 </div>
 
                 <div className="space-y-2">
