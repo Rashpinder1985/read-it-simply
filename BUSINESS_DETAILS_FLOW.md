@@ -276,3 +276,4 @@ Sign Up → Auto-redirect to Business Details → Fill Form → Save → Dashboa
 The form exists and works correctly. It just needs better discovery/prompting for first-time users.
 
 
+

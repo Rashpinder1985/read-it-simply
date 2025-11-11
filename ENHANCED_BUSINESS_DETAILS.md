@@ -306,3 +306,4 @@ Could add:
 This ensures MarketPulse **always finds competitors** because the cities are guaranteed to exist in the database! 🚀
 
 
+
