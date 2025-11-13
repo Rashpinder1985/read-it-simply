@@ -75,3 +75,5 @@ URL: https://chzpetqsqhunditgohzx.supabase.co
 
 If you see `tonqbucmhlzqzznjipoy` - **STOP** and update your environment variables!
 
+
+

@@ -323,3 +323,5 @@ export function canAccess(userRole: UserRole, feature: string): boolean {
   return requiredPermissions.some(perm => hasPermission(userRole, perm));
 }
 
+
+

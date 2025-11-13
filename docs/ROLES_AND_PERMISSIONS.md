@@ -361,3 +361,5 @@ For questions about roles and permissions:
 - Use `/src/hooks/usePermissions.ts` for permission checks
 - See User Management interface for role assignment
 
+
+
