@@ -1,0 +1,181 @@
+================================================================================
+                    MARKETPULSE API KEYS & LOCATIONS
+                         Quick Reference Chart
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      FRONTEND ENVIRONMENT VARIABLES                      │
+│                         (React/Vite Application)                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+WHERE TO SET:
+  • Local Development: .env.local file in project root
+  • Vercel Production: Vercel Dashboard → Settings → Environment Variables
+
+VARIABLES:
+  ✓ VITE_SUPABASE_PROJECT_ID        → Supabase project reference ID
+  ✓ VITE_SUPABASE_URL               → https://your_project_id.supabase.co
+  ✓ VITE_SUPABASE_PUBLISHABLE_KEY   → Anon/public key (safe for frontend)
+
+USED IN FILES:
+  ✓ src/integrations/supabase/client.ts
+  ✓ src/pages/RoleAssignment.tsx
+  ✓ src/pages/UserManagement.tsx
+  ✓ src/services/competitorDataService.ts
+  ✓ src/pages/GoldRatesAdmin.tsx
+
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                  EDGE FUNCTIONS ENVIRONMENT VARIABLES                    │
+│                      (Supabase Deno Functions)                           │
+└─────────────────────────────────────────────────────────────────────────┘
+
+WHERE TO SET:
+  • Supabase Dashboard → Edge Functions → Settings → Secrets
+
+VARIABLES:
+  ✓ SUPABASE_URL                    → https://your_project_id.supabase.co
+  ✓ SUPABASE_ANON_KEY               → Anon/public key (read operations)
+  ✓ SUPABASE_SERVICE_ROLE_KEY       → ⚠️  PRIVATE! (admin operations)
+  ✓ LOVABLE_API_KEY                 → AI content generation
+  ✓ TAVILY_API_KEY                  → Web scraping (optional)
+
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       SUPABASE_SERVICE_ROLE_KEY                          │
+│                        ⚠️  CRITICAL - PRIVATE KEY ⚠️                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+USED IN EDGE FUNCTIONS:
+  → admin-create-user              (Create users with roles)
+  → admin-delete-user              (Delete users)
+  → marketpulse-gold-rates         (Update gold rates)
+  → generate-sample-data           (Generate sample data)
+  → reset-sample-data              (Reset database data)
+
+⚠️  NEVER USE IN FRONTEND CODE - Full database access!
+
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            LOVABLE_API_KEY                               │
+│                       (AI Content Generation)                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+USED IN EDGE FUNCTIONS:
+  → generate-content-text          (Social media text generation)
+  → generate-content-image         (Image generation for posts)
+  → analyze-competitor             (Competitor analysis & insights)
+  → market-search                  (Market research)
+  → market-pulse-social            (Social media analytics)
+
+HOW TO GET:
+  1. Sign up at https://lovable.dev
+  2. Go to Settings → API Keys
+  3. Create a new API key
+
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            TAVILY_API_KEY                                │
+│                    (Web Scraping - Optional)                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+USED IN EDGE FUNCTIONS:
+  → analyze-competitor             (Web search for competitor data)
+
+HOW TO GET:
+  1. Sign up at https://tavily.com
+  2. Get API key from dashboard
+
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         SUPABASE_URL & SUPABASE_ANON_KEY                 │
+│                        (Read Operations)                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+USED IN EDGE FUNCTIONS (Read-only operations):
+  → marketpulse-dashboard          (Dashboard data)
+  → marketpulse-analytics          (Analytics data)
+  → marketpulse-sync               (Data synchronization)
+  → marketpulse-trends             (Trend analysis)
+  → marketpulse-national-intel     (National intelligence)
+
+================================================================================
+
+                            SETUP CHECKLIST
+================================================================================
+
+FOR LOCAL DEVELOPMENT:
+  □ Create .env.local file
+  □ Add VITE_SUPABASE_PROJECT_ID
+  □ Add VITE_SUPABASE_URL
+  □ Add VITE_SUPABASE_PUBLISHABLE_KEY
+  □ Run: npm install
+  □ Run: npm run dev
+
+FOR SUPABASE EDGE FUNCTIONS:
+  □ Go to Supabase Dashboard → Edge Functions → Settings
+  □ Add SUPABASE_URL
+  □ Add SUPABASE_ANON_KEY
+  □ Add SUPABASE_SERVICE_ROLE_KEY
+  □ Add LOVABLE_API_KEY
+  □ Add TAVILY_API_KEY (optional)
+  □ Deploy all Edge Functions using: supabase functions deploy <function-name>
+
+FOR VERCEL DEPLOYMENT:
+  □ Go to Vercel Dashboard → Project → Settings → Environment Variables
+  □ Add VITE_SUPABASE_PROJECT_ID
+  □ Add VITE_SUPABASE_URL
+  □ Add VITE_SUPABASE_PUBLISHABLE_KEY
+  □ Set for: Production, Preview, Development
+  □ Deploy
+
+================================================================================
+
+                            QUICK REFERENCE
+================================================================================
+
+GET SUPABASE CREDENTIALS:
+  Dashboard → Settings → API → Copy URL, anon key, service_role key
+  Dashboard → Settings → General → Copy Reference ID
+
+GET LOVABLE API KEY:
+  https://lovable.dev → Settings → API Keys → Create new key
+
+GET TAVILY API KEY:
+  https://tavily.com → Dashboard → Get API key
+
+================================================================================
+
+                           SECURITY REMINDERS
+================================================================================
+
+✅ DO:
+  • Use .env.local for local development
+  • Add .env.local to .gitignore
+  • Use environment variables in Vercel/hosting platforms
+  • Use SUPABASE_PUBLISHABLE_KEY in frontend
+  • Use SUPABASE_SERVICE_ROLE_KEY only in Edge Functions
+  • Rotate API keys periodically
+
+❌ DON'T:
+  • Never commit API keys to Git
+  • Never use SERVICE_ROLE_KEY in frontend
+  • Never hardcode credentials in source code
+  • Never share .env.local file publicly
+  • Never commit .env files to version control
+
+================================================================================
+
+For detailed setup instructions, see:
+  → SETUP_GUIDE.md
+  → API_KEYS_REFERENCE.md
+  → ENV_VARIABLES.md
+  → DEPLOYMENT_GUIDE.md
+
+================================================================================
+
